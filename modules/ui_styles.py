@@ -3,65 +3,70 @@ import streamlit as st
 def apply_design():
     st.markdown("""
     <style>
-        /* 1. ESCONDER SIDEBAR E MENU PADRÃO */
+        /* 1. RESET E FUNDO (Tech + Finance + AI) */
         [data-testid="stSidebar"] { display: none; }
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
-
-        /* 2. IMAGEM DE FUNDO (DATA INTEGRATION) */
+        
         .stApp {
-            background-image: url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop");
+            /* Fundo: Rede Neural Financeira Abstrata (Escuro/Azul Profundo) */
+            background-image: url("https://img.freepik.com/premium-photo/futuristic-stock-market-background-with-trend-graph-digits-3d-view_102583-3972.jpg");
             background-size: cover;
             background-attachment: fixed;
             background-position: center;
         }
-
-        /* 3. PELÍCULA DE VIDRO (Para ler o texto sobre a imagem) */
+        
+        /* Camada de Contraste (Glassmorphism Escuro) para ler o texto */
         .stApp::before {
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(248, 250, 252, 0.85); /* Branco Azulado 85% opaco */
+            background: rgba(15, 23, 42, 0.92); /* Azul Noite Profundo 92% Opaco */
             z-index: -1;
         }
 
-        /* 4. CABEÇALHO DE NAVEGAÇÃO (Menu Superior) */
-        .nav-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 50px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+        /* 2. MENU SUPERIOR PROFISSIONAL (NAVBAR) */
+        .stButton > button {
+            background-color: transparent;
+            color: #94a3b8;
+            border: none;
+            font-weight: 600;
+            font-family: 'Segoe UI', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            border-radius: 0;
+            padding: 10px 20px;
         }
-        
-        /* 5. TIPOGRAFIA & CORES */
-        h1, h2, h3 { color: #0f172a !important; font-family: 'Segoe UI', sans-serif; font-weight: 700; }
-        p, li, div { color: #334155; font-size: 1.05rem; }
-        
-        /* Destaques */
-        .hero-title {
-            background: -webkit-linear-gradient(45deg, #0047AB, #00b4d8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 3rem !important;
-            font-weight: 800 !important;
-            text-align: center;
+        .stButton > button:hover {
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        .stButton > button:focus {
+            color: #fff;
+            border-bottom: 2px solid #fff;
+            box-shadow: none;
         }
 
-        /* 6. RODAPÉ CNPJ */
+        /* 3. TIPOGRAFIA INSTITUCIONAL */
+        h1, h2, h3 { color: #f8fafc !important; font-family: 'Helvetica Neue', sans-serif; font-weight: 700; }
+        p, li, div { color: #cbd5e1; font-size: 1.05rem; line-height: 1.6; }
+        
+        /* Destaques Conceituais */
+        .concept-highlight { color: #60a5fa; font-weight: bold; }
+        .math-box { font-family: 'Courier New', monospace; background: rgba(0,0,0,0.3); padding: 10px; border-left: 3px solid #f59e0b; color: #fbbf24; }
+
+        /* 4. RODAPÉ FIXO */
         .footer-cnpj {
-            margin-top: 50px;
-            padding: 20px;
+            margin-top: 80px;
+            padding: 30px;
             text-align: center;
-            border-top: 1px solid #cbd5e1;
+            border-top: 1px solid #334155;
             color: #64748b;
             font-size: 0.8rem;
+            background: #0f172a;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -69,8 +74,8 @@ def apply_design():
 def show_footer_cnpj():
     st.markdown("""
     <div class="footer-cnpj">
-        <b>Intelligence Flow Ltda</b> • CNPJ: 52.123.456/0001-99<br>
-        Paranaguá/PR • Curitiba/PR<br>
-        Todos os direitos reservados © 2026
+        <span style="color:white; font-weight:bold;">INTELLIGENCE FLOW LTDA</span><br>
+        CNPJ: 52.123.456/0001-99 • Compliance & Risk Management<br>
+        Paranaguá/PR • Curitiba/PR • Miami/FL (Data Center)
     </div>
     """, unsafe_allow_html=True)
