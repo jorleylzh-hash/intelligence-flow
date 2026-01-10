@@ -40,11 +40,10 @@ def apply_pro_styles():
 # --- CÁLCULOS TÉCNICOS ---
 def calculate_vwap(df):
     try:
-        # Garante que os dados sejam numéricos para evitar erros
-        df['High'] = pd.to_numeric(df['High'], errors='coerce')
-        df['Low'] = pd.to_numeric(df['Low'], errors='coerce')
-        df['Close'] = pd.to_numeric(df['Close'], errors='coerce')
-        df['Volume'] = pd.to_numeric(df['Volume'], errors='coerce')
+        # Garante numérico e remove NaNs
+        cols = ['High', 'Low', 'Close', 'Volume']
+        for c in cols:
+            df[c] = pd.to_numeric(df[c], errors='coerce')
         
         df['Typical_Price'] = (df['High'] + df['Low'] + df['Close']) / 3
         df['VP'] = df['Typical_Price'] * df['Volume']
@@ -56,12 +55,14 @@ def get_intraday_data(ticker):
     try:
         df = yf.download(ticker, period="1d", interval="5m", progress=False)
         
-        # --- CORREÇÃO CRÍTICA AQUI ---
-        # Se vier com cabeçalho duplo (MultiIndex), nós removemos o nível do Ticker
+        # --- LIMPEZA DE DADOS ROBUSTA ---
+        # Se tiver MultiIndex (comum no yfinance novo), achata para nível único
         if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
-        # -----------------------------
-            
+            df.columns = df.columns.get_level_values(0)
+        
+        # Remove colunas duplicadas se houver
+        df = df.loc[:, ~df.columns.duplicated()]
+        
         return calculate_vwap(df)
     except: return pd.DataFrame()
 
@@ -102,9 +103,9 @@ def plot_technical_chart(symbol, df_data):
             line=dict(color='#facc15', width=2)
         ), secondary_y=True)
         
-    # Volume (Correção da Cor)
-    # Agora que o DF está achatado, 'r' será um valor simples e não uma Série
-    colors = ['#ef4444' if (r['Open'] - r['Close']) > 0 else '#10b981' for i, r in df_data.iterrows()]
+    # Volume com Cores (CORREÇÃO APLICADA AQUI: ZIP)
+    # Comparamos Open e Close coluna a coluna, sem iterar rows complexas
+    colors = ['#ef4444' if (o - c) > 0 else '#10b981' for o, c in zip(df_data['Open'], df_data['Close'])]
     
     fig.add_trace(go.Bar(
         x=df_data.index, y=df_data['Volume'], 
@@ -120,7 +121,6 @@ def plot_technical_chart(symbol, df_data):
 def show_dashboard():
     apply_pro_styles()
     
-    # Cabeçalho
     c1, c2 = st.columns([4,1])
     with c1: st.caption(f"📍 USER: {st.session_state.username}")
     with c2: 
@@ -130,7 +130,6 @@ def show_dashboard():
 
     st.title("🌪️ INTELLIGENCE FLOW")
 
-    # CARDS CONTEXTUAIS
     col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown(f"""<div class="context-card" style="background-image: url('{IMG_WIN}');"><div class="overlay"><div class="badge">WIN FUTURO</div><p class="card-title">IBOV</p><p class="card-desc">Correlação Alta: VALE3 e PETR4.</p></div></div>""", unsafe_allow_html=True)
@@ -139,7 +138,6 @@ def show_dashboard():
     with col3:
         st.markdown(f"""<div class="context-card" style="background-image: url('{IMG_OIL}');"><div class="overlay"><div class="badge">DRIVERS</div><p class="card-title">MACRO</p><p class="card-desc">Petróleo e Minério definem o tom.</p></div></div>""", unsafe_allow_html=True)
 
-    # LOOP DE DADOS
     placeholder = st.empty()
     while True:
         quotes = get_live_quotes()
