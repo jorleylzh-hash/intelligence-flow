@@ -1,79 +1,58 @@
 import streamlit as st
-from modules import ui_styles, auth_engine, dashboard_v3
+import modules.dashboard_v3 as dashboard_v3
+import modules.auth_engine as auth_engine
 
-# --- 1. CONFIGURAÇÃO INICIAL ---
-st.set_page_config(page_title="Intelligence Flow", layout="wide", page_icon="🌪️")
+# --- CONFIGURAÇÃO DA PÁGINA (Deve ser a primeira linha) ---
+st.set_page_config(
+    page_title="Intelligence Flow | Institutional",
+    page_icon="🌪️",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-# Inicializa o Banco de Dados
-auth_engine.init_db()
+# --- INICIALIZAÇÃO DE ESTADO ---
+if 'authentication_status' not in st.session_state:
+    st.session_state['authentication_status'] = None
 
-# Verifica sessão
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'username' not in st.session_state:
-    st.session_state.username = ""
+# --- BARRA LATERAL (LOGIN) ---
+with st.sidebar:
+    st.title("🔐 Acesso Restrito")
+    # Chama o motor de autenticação (mas não bloqueia o app principal)
+    authenticator = auth_engine.get_authenticator()
+    name, authentication_status, username = authenticator.login('Login', 'main')
 
-# Aplica estilo
-ui_styles.apply_design()
+# --- LÓGICA DE EXIBIÇÃO ---
 
-# --- 2. NAVEGAÇÃO ---
-if not st.session_state.logged_in:
-    # === TELA DE LOGIN / CADASTRO ===
-    col1, col2, col3 = st.columns([1, 2, 1])
+if st.session_state['authentication_status']:
+    # === CENÁRIO 1: USUÁRIO LOGADO (ÁREA VIP) ===
+    # Aqui você mostraria as ferramentas avançadas/operacionais
+    st.sidebar.success(f"Bem-vindo, {name}!")
+    st.sidebar.write("---")
     
-    with col2:
-        ui_styles.header_animation()
-        st.markdown("<br>", unsafe_allow_html=True)
+    # Menu de Navegação do Usuário Logado
+    page = st.sidebar.radio("Navegação", ["Home Institucional", "Mesa de Operações", "Gestão de Risco"])
+    
+    if page == "Home Institucional":
+        dashboard_v3.show_dashboard()
+    elif page == "Mesa de Operações":
+        st.title("📈 Mesa de Operações (Área Privada)")
+        st.info("Aqui entram os gráficos avançados, boletas e calculadoras exclusivas para assinantes.")
+        # import modules.trading_desk as trading
+        # trading.show()
+    elif page == "Gestão de Risco":
+        st.write("Ferramentas de Risco...")
         
-        tab_login, tab_register = st.tabs(["🔒 ACESSAR SISTEMA", "📝 NOVO CADASTRO"])
-        
-        with tab_login:
-            st.markdown('<div class="login-box">', unsafe_allow_html=True)
-            email = st.text_input("Email Corporativo", key="login_email")
-            password = st.text_input("Senha", type="password", key="login_pass")
-            
-            if st.button("CONECTAR KERNEL"):
-                user = auth_engine.verify_login(email, password)
-                if user:
-                    st.session_state.logged_in = True
-                    st.session_state.username = user[0][2]
-                    st.rerun()
-                else:
-                    st.error("Acesso Negado: Email ou Senha incorretos.")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with tab_register:
-            st.warning("⚠️ O envio de email está desativado. Copie sua senha abaixo.")
-            new_name = st.text_input("Nome Completo")
-            new_email = st.text_input("Seu Email")
-            
-            if st.button("CRIAR CONTA E GERAR SENHA"):
-                if new_name and new_email:
-                    auto_pass = auth_engine.generate_password()
-                    
-                    if auth_engine.create_user(new_email, auto_pass, new_name):
-                        # Tenta notificar admin (se configurado)
-                        auth_engine.send_whatsapp_admin(new_email, new_name, auto_pass)
-                        
-                        st.success("✅ Conta Criada!")
-                        st.markdown("### 🔐 SUA CREDENCIAL")
-                        st.info("Abaixo está sua senha provisória. Use o botão ao lado para copiar.")
-                        
-                        # --- CORREÇÃO DA CÓPIA (SENHA LIMPA) ---
-                        st.code(auto_pass, language="text")
-                        
-                        st.caption("Dica: Cole a senha no Bloco de Notas antes de sair.")
-                    else:
-                        st.error("❌ Este email já possui cadastro.")
-                else:
-                    st.error("Preencha todos os campos.")
+    authenticator.logout('Sair', 'sidebar')
 
 else:
-    # === TELA DO DASHBOARD ===
-    with st.sidebar:
-        st.markdown(f"### 👤 {st.session_state.username}")
-        if st.button("SAIR DO SISTEMA (LOGOUT)"):
-            st.session_state.logged_in = False
-            st.rerun()
-    
+    # === CENÁRIO 2: VISITANTE (PÁGINA PÚBLICA) ===
+    # Mostra a página corporativa "Fantástica" para vender o produto
     dashboard_v3.show_dashboard()
+    
+    # Se a senha estiver errada
+    if st.session_state['authentication_status'] == False:
+        st.sidebar.error('Usuário ou senha incorretos')
+    
+    # Se não tiver tentado logar ainda
+    elif st.session_state['authentication_status'] == None:
+        st.sidebar.warning('Faça login para acessar a Mesa de Operações.')
