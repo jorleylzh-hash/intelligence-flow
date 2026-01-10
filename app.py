@@ -44,33 +44,35 @@ if not st.session_state.logged_in:
                     st.error("Credenciais inválidas.")
             st.markdown('</div>', unsafe_allow_html=True)
 
-        with tab_register:
-            st.warning("O cadastro gera credenciais automáticas.")
+     with tab_register:
+            st.warning("⚠️ O envio de email está desativado. Copie sua senha abaixo.")
             new_name = st.text_input("Nome Completo")
-            new_email = st.text_input("Seu Melhor Email")
+            new_email = st.text_input("Seu Email")
             
-            if st.button("GERAR CREDENCIAIS"):
+            if st.button("CRIAR CONTA E GERAR SENHA"):
                 if new_name and new_email:
-                    # Gera senha e salva
                     auto_pass = auth_engine.generate_password()
+                    
                     if auth_engine.create_user(new_email, auto_pass, new_name):
-                        auth_engine.send_confirmation_email(new_email, new_name, auto_pass)
-                        st.success("Cadastro realizado com sucesso!")
-                        st.info(f"📧 Usuário: {new_email}")
-                        st.code(f"🔑 Senha: {auto_pass}") # Mostra a senha na tela
+                        # Tenta notificar admin (se configurado)
+                        auth_engine.send_whatsapp_admin(new_email, new_name, auto_pass)
+                        
+                        st.success("✅ Conta Criada!")
+                        st.markdown("### 🔐 SUA CREDENCIAL")
+                        st.info("Abaixo está sua senha provisória. Use o botão ao lado para copiar.")
+                        
+                        # --- CORREÇÃO DA CÓPIA ---
+                        # Usamos um code block limpo. O botão de copiar do Streamlit 
+                        # copia EXATAMENTE o que está dentro da caixa cinza.
+                        st.code(auto_pass, language="text")
+                        
+                        st.caption("Dica: Cole a senha no Bloco de Notas antes de sair.")
                     else:
-                        st.error("Email já cadastrado.")
+                        st.error("❌ Este email já possui cadastro.")
                 else:
                     st.error("Preencha todos os campos.")
-
-else:
-    # === TELA DO DASHBOARD (SÓ ENTRA AQUI SE LOGGED_IN FOR TRUE) ===
-    # Barra Lateral com Logout
-    with st.sidebar:
-        st.markdown(f"### 👤 {st.session_state.username}")
-        if st.button("SAIR DO SISTEMA (LOGOUT)"):
-            st.session_state.logged_in = False
-            st.rerun()
+                    st.rerun()
     
     # Chama o Dashboard que está na pasta modules
     dashboard_v3.show_dashboard()
+
