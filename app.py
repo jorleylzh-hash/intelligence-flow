@@ -1,65 +1,57 @@
 import streamlit as st
-import modules.dashboard_v3 as dashboard_v3
+import modules.landing_page as landing_page # Mudou de dashboard_v3 para landing_page
+import modules.ecosystem as ecosystem         # Novo
+import modules.solutions as solutions         # Novo
 import modules.auth_engine as auth_engine
 import modules.ui_styles as ui_styles
 import modules.trading_desk as trading_desk
 
-# CONFIG
+# CONFIGURAÇÃO
 st.set_page_config(page_title="Intelligence Flow", page_icon="💠", layout="wide")
 ui_styles.apply_design()
 
-# SESSION STATE
+# STATE
 if 'page' not in st.session_state: st.session_state.page = 'home'
 if 'authentication_status' not in st.session_state: st.session_state['authentication_status'] = None
 
-# MENU
-c1, c2 = st.columns([1, 3])
+# MENU SUPERIOR ATUALIZADO
+st.markdown("<div class='nav-container'>", unsafe_allow_html=True)
+c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.markdown("<h3 style='margin:0; color:#fff;'>INTELLIGENCE FLOW</h3>", unsafe_allow_html=True)
+    if st.button("🏠 PÁGINA INICIAL"): st.session_state.page = 'home'
 with c2:
-    b1, b2, b3 = st.columns(3)
-    if b1.button("ECOSSISTEMA"): st.session_state.page = 'home'
-    if b2.button("SOLUÇÕES"): st.session_state.page = 'home'
-    if b3.button("ÁREA DO TRADER"): st.session_state.page = 'trader'
+    if st.button("💠 ECOSSISTEMA"): st.session_state.page = 'ecosystem'
+with c3:
+    if st.button("💎 SOLUÇÕES"): st.session_state.page = 'solutions'
+with c4:
+    if st.button("📈 ÁREA DO TRADER"): st.session_state.page = 'trader'
+st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("---")
-
-# ROUTING
+# ROTEAMENTO
 if st.session_state.page == 'home':
-    dashboard_v3.show_landing_page()
+    landing_page.show_landing_page()
+
+elif st.session_state.page == 'ecosystem':
+    ecosystem.show_ecosystem()
+
+elif st.session_state.page == 'solutions':
+    solutions.show_solutions()
 
 elif st.session_state.page == 'trader':
     authenticator = auth_engine.get_authenticator()
-    
-    # --- CORREÇÃO DO ERRO 'CANNOT UNPACK' ---
-    # Simplesmente chamamos o login. O resultado vai para st.session_state
     try:
         authenticator.login()
-    except Exception as e:
-        pass # Ignora erro de renderização se houver
+    except: pass
 
-    # VERIFICAÇÃO SEGURA
     if st.session_state.get('authentication_status'):
-        # Logado com Sucesso
-        c_user, c_out = st.columns([6, 1])
-        with c_user:
-            st.success(f"Terminal Ativo: {st.session_state.get('name')}")
-        with c_out:
-            authenticator.logout('Logoff', 'main')
-        
+        c_usr, c_out = st.columns([6, 1])
+        with c_usr: st.success(f"Logado: {st.session_state.get('name')}")
+        with c_out: authenticator.logout('Sair', 'main')
         trading_desk.show_desk()
-        
     elif st.session_state.get('authentication_status') is False:
-        st.error('Acesso Negado: Usuário ou Senha incorretos.')
-        
+        st.error('Credenciais Inválidas')
     elif st.session_state.get('authentication_status') is None:
-        st.info('Acesso Restrito ao Núcleo de Processamento.')
-        st.markdown("""
-        <div style="font-size:0.8rem; color:#64748b; text-align:center;">
-            Credenciais de Acesso Institucional Necessárias<br>
-            (Teste: admin / 123)
-        </div>
-        """, unsafe_allow_html=True)
+        st.info('Acesso Restrito ao Sistema HFT.')
 
-# FOOTER
+# RODAPÉ
 ui_styles.show_footer_cnpj()
