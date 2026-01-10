@@ -25,20 +25,19 @@ if page == "🏠 Institucional":
 
 elif page == "🔐 Mesa de Operações":
     # Lógica de Login (Área Privada)
-    if hasattr(auth_engine, 'get_authenticator'):
-        authenticator = auth_engine.get_authenticator()
-        
-        # --- CORREÇÃO DO ERRO DE LOGIN AQUI ---
-        # Usando location='main' para compatibilidade com nova versão
-        name, authentication_status, username = authenticator.login(location='main')
-        
-        if st.session_state["authentication_status"]:
-            # --- USUÁRIO LOGADO COM SUCESSO ---
-            authenticator.logout('Sair', 'sidebar')
-            
-            st.title(f"Mesa de Operações | Bem-vindo, {name}")
-            st.markdown("---")
-            st.success("✅ Conexão com NYSE e B3 estabelecida.")
+   # ... dentro do if da Área de Membros ...
+
+if hasattr(auth_engine, 'get_authenticator'):
+    authenticator = auth_engine.get_authenticator()
+    
+    # COMANDO PARA A VERSÃO 0.3.2 (Simples e Funcional)
+    name, authentication_status, username = authenticator.login('Login', 'main')
+    
+    if st.session_state["authentication_status"]:
+        # ... código de sucesso ...
+        authenticator.logout('Sair', 'sidebar')
+        st.write(f'Bem-vindo *{name}*')
+        # ... carregar mesa ...
             
             # Placeholder para os gráficos reais de trading
             st.info("Aqui seriam carregados os gráficos de VWAP, Bandas e Fluxo em Tempo Real.")
@@ -54,3 +53,4 @@ elif page == "🔐 Mesa de Operações":
             
     else:
         st.error("Erro crítico: Motor de autenticação não encontrado.")
+
