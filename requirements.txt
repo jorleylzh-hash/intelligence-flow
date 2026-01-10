@@ -1,8 +1,5 @@
 streamlit
-yfinance
-pandas
-plotly
-bcrypt
-requests
-streamlit-lottie
 streamlit-authenticator
+pandas
+yfinance
+plotly
