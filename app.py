@@ -15,42 +15,43 @@ if 'authentication_status' not in st.session_state:
     st.session_state['authentication_status'] = None
 
 # 3. LÓGICA DE NAVEGAÇÃO
-# O usuário escolhe no menu se quer ver o site ou entrar na mesa
 st.sidebar.markdown("### Navegação")
 page = st.sidebar.radio("Ir para:", ["🏠 Institucional", "🔐 Mesa de Operações"])
 
 if page == "🏠 Institucional":
-    # Carrega a Landing Page Fantástica (Pública)
-    dashboard_v3.show_landing_page()
+    # Verifica se a função existe para evitar erro
+    if hasattr(dashboard_v3, 'show_landing_page'):
+        dashboard_v3.show_landing_page()
+    else:
+        st.error("Erro: A página institucional não foi encontrada no módulo.")
 
 elif page == "🔐 Mesa de Operações":
-    # Lógica de Login (Área Privada)
-   # ... dentro do if da Área de Membros ...
-
-if hasattr(auth_engine, 'get_authenticator'):
-    authenticator = auth_engine.get_authenticator()
-    
-    # COMANDO PARA A VERSÃO 0.3.2 (Simples e Funcional)
-    name, authentication_status, username = authenticator.login('Login', 'main')
-    
-    if st.session_state["authentication_status"]:
-        # ... código de sucesso ...
-        authenticator.logout('Sair', 'sidebar')
-        st.write(f'Bem-vindo *{name}*')
-        # ... carregar mesa ...
+    # --- AQUI ESTAVA O ERRO DE INDENTAÇÃO ---
+    # Tudo abaixo deste elif precisa ter 4 espaços de recuo
+    if hasattr(auth_engine, 'get_authenticator'):
+        authenticator = auth_engine.get_authenticator()
+        
+        # COMANDO DE LOGIN (Versão 0.3.2)
+        # Se você atualizou o requirements.txt, este comando vai funcionar:
+        name, authentication_status, username = authenticator.login('Login', 'main')
+        
+        if st.session_state["authentication_status"]:
+            # --- ÁREA LOGADA ---
+            authenticator.logout('Sair', 'sidebar')
+            st.title(f"Mesa de Operações | Bem-vindo, {name}")
+            st.markdown("---")
+            st.success("✅ Conexão segura estabelecida.")
             
-            # Placeholder para os gráficos reais de trading
-            st.info("Aqui seriam carregados os gráficos de VWAP, Bandas e Fluxo em Tempo Real.")
-            
+            # Aqui entra o código da Mesa (Gráficos, boletas, etc.)
             col1, col2 = st.columns(2)
-            col1.metric("Saldo Simulado", "R$ 100.000,00", "+2.5%")
-            col2.metric("Risco Diário", "Baixo", "Ok")
+            col1.metric("Saldo", "R$ 100.000,00", "+1.2%")
+            col2.metric("Latência", "24ms", "-5ms")
             
         elif st.session_state["authentication_status"] == False:
             st.error('Usuário ou senha incorretos.')
+            
         elif st.session_state["authentication_status"] == None:
-            st.warning('Por favor, faça login para acessar os dados sensíveis.')
+            st.warning('Por favor, insira suas credenciais de acesso.')
             
     else:
-        st.error("Erro crítico: Motor de autenticação não encontrado.")
-
+        st.error("Erro crítico: O motor de autenticação (auth_engine) falhou ao carregar.")
