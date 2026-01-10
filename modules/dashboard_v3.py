@@ -9,27 +9,27 @@ import requests
 def apply_bank_grade_css():
     st.markdown("""
     <style>
-        /* Fundo Geral - Cinza Gelo (Profissional e Leve) */
+        /* Fundo Geral - Cinza Gelo */
         .stApp { background-color: #f0f2f6; }
         
         /* Tipografia */
         h1, h2, h3 { 
-            color: #0f172a; /* Azul Quase Preto */
+            color: #0f172a; 
             font-family: 'Segoe UI', Helvetica, sans-serif;
             font-weight: 600;
         }
         
-        /* Cards (Widgets) - Estilo Bancário */
+        /* Cards (Widgets) */
         .bank-card {
             background-color: #ffffff;
             padding: 24px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            border-top: 4px solid #0047AB; /* Azul Cobalto (Confiança) */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-top: 4px solid #0047AB; 
             margin-bottom: 20px;
             transition: transform 0.2s;
         }
-        .bank-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .bank-card:hover { transform: translateY(-2px); }
 
         /* Métricas */
         .metric-label { font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -37,7 +37,7 @@ def apply_bank_grade_css():
         .metric-delta-pos { color: #059669; font-weight: 600; font-size: 0.9rem; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; }
         .metric-delta-neg { color: #dc2626; font-weight: 600; font-size: 0.9rem; background: #fef2f2; padding: 2px 8px; border-radius: 4px; }
 
-        /* Cabeçalho Institucional */
+        /* Cabeçalho */
         .hero-header {
             background: linear-gradient(135deg, #003366 0%, #0047AB 100%);
             padding: 40px;
@@ -79,12 +79,23 @@ def get_market_data():
     except:
         return None, None
 
-def plot_mini_chart(series, color_line):
+def plot_mini_chart(series, hex_color):
+    # --- CORREÇÃO DO ERRO DE COR AQUI ---
+    # Convertendo Hex (#RRGGBB) para RGB Inteiro para criar a string correta
+    clean_hex = hex_color.lstrip('#')
+    r = int(clean_hex[0:2], 16)
+    g = int(clean_hex[2:4], 16)
+    b = int(clean_hex[4:6], 16)
+    
+    # Criando a string válida: rgba(R, G, B, 0.1)
+    fill_rgba = f"rgba({r}, {g}, {b}, 0.1)"
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         y=series, mode='lines', 
-        line=dict(color=color_line, width=2),
-        fill='tozeroy', fillcolor=f"rgba{color_line[3:-1]}, 0.1)" # Truque para cor transparente
+        line=dict(color=hex_color, width=2),
+        fill='tozeroy', 
+        fillcolor=fill_rgba # Agora usa a variável corrigida
     ))
     fig.update_layout(
         margin=dict(l=0, r=0, t=0, b=0), height=60,
@@ -98,7 +109,7 @@ def plot_mini_chart(series, color_line):
 def show_landing_page():
     apply_bank_grade_css()
 
-    # HERO SECTION (Institucional e Seguro)
+    # HERO HEADER
     st.markdown("""
     <div class="hero-header">
         <h1 style="color:white; margin:0;">INTELLIGENCE FLOW</h1>
@@ -108,7 +119,7 @@ def show_landing_page():
     </div>
     """, unsafe_allow_html=True)
 
-    # VISÃO GERAL DE MERCADO (Mais informativo)
+    # VISÃO GERAL
     st.markdown("### 📊 Panorama Global")
     st.markdown("Monitoramento em tempo real dos principais drivers de liquidez mundial.")
     
@@ -122,7 +133,9 @@ def show_landing_page():
             name = keys[i]
             val, chg = data[name]
             series = charts[name]
-            color = "#059669" if chg >= 0 else "#dc2626" # Verde ou Vermelho Institucional
+            
+            # Definição das cores em Hexadecimal
+            color_hex = "#059669" if chg >= 0 else "#dc2626" 
             
             with col:
                 st.markdown(f"""
@@ -134,15 +147,14 @@ def show_landing_page():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-                # Gráfico Limpo abaixo do card
+                
                 if len(series) > 0:
-                    st.plotly_chart(plot_mini_chart(series, color), use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(plot_mini_chart(series, color_hex), use_container_width=True, config={'displayModeBar': False})
 
     st.markdown("---")
 
-    # ÁREA EXPLICATIVA (Abas para organizar informação sem poluir)
+    # METODOLOGIA (ABAS)
     st.markdown("### 💠 Nossa Metodologia")
-    
     tab1, tab2, tab3 = st.tabs(["Fluxo Macro", "Arbitragem HFT", "Segurança"])
     
     with tab1:
@@ -153,34 +165,30 @@ def show_landing_page():
                 <h3>Correlação B3 vs NYSE</h3>
                 <p style="color:#475569;">
                     Utilizamos algoritmos proprietários para rastrear o fluxo de capital estrangeiro. 
-                    Monitoramos o spread entre o <b>EWZ (Brasil ETF)</b> e o IBOVESPA Futuro para antecipar tendências de curto prazo.
-                    <br><br>
-                    Nosso modelo identifica quando o mercado local diverge injustificadamente do cenário global (DXY e Treasuries).
+                    Monitoramos o spread entre o <b>EWZ (Brasil ETF)</b> e o IBOVESPA Futuro.
                 </p>
             </div>
             """, unsafe_allow_html=True)
         with c2:
-            st.info("ℹ️ **Sabia?** 60% do volume da B3 é capital estrangeiro. Quem não olha para fora, opera cego.")
+            st.info("ℹ️ **Insight:** 60% do volume da B3 é capital estrangeiro.")
 
     with tab2:
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("""
             <div class="bank-card">
-                <h3>Oportunidade de Arbitragem</h3>
+                <h3>Gaps de Preço</h3>
                 <p style="color:#475569;">
-                    Ativos espelhados (ADRs) devem ter paridade matemática. 
-                    Detectamos <b>Gaps de Preço</b> na casa dos milissegundos entre PETR4 (Brasil) e PBR (EUA).
+                    Detectamos divergências na casa dos milissegundos entre PETR4 (Brasil) e PBR (EUA).
                 </p>
             </div>
             """, unsafe_allow_html=True)
         with c2:
              st.markdown("""
             <div class="bank-card">
-                <h3>Execução de Alta Performance</h3>
+                <h3>Execução</h3>
                 <p style="color:#475569;">
-                    Nossa "Área do Trader" oferece visualização de baixa latência para captura desses spreads, 
-                    com filtros de agressão e fluxo de ordens.
+                    Visualização de baixa latência para captura desses spreads na Área do Trader.
                 </p>
             </div>
             """, unsafe_allow_html=True)
@@ -190,22 +198,21 @@ def show_landing_page():
         <div class="bank-card" style="border-top-color: #059669;">
             <h3>Protocolos de Segurança</h3>
             <ul>
-                <li style="color:#475569;">Dados criptografados ponta-a-ponta.</li>
-                <li style="color:#475569;">Conexão via WebSocket seguro (WSS).</li>
-                <li style="color:#475569;">Infraestrutura em nuvem com redundância.</li>
+                <li style="color:#475569;">Criptografia ponta-a-ponta (SSL).</li>
+                <li style="color:#475569;">Infraestrutura dedicada em nuvem.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
-    # CTA (Chamada para Ação)
+    # CTA
     st.markdown("<br>", unsafe_allow_html=True)
     c_cta1, c_cta2, c_cta3 = st.columns([1, 2, 1])
     with c_cta2:
         st.markdown("""
         <div style="text-align: center; background-color: #e0e7ff; padding: 30px; border-radius: 12px; border: 1px solid #c7d2fe;">
             <h3 style="color: #3730a3;">Acesso Institucional</h3>
-            <p style="color: #4338ca;">Acesse a <b>Área do Trader</b> no menu lateral para visualizar os sinais em tempo real.</p>
+            <p style="color: #4338ca;">Acesse a <b>Área do Trader</b> no menu lateral para visualizar os sinais.</p>
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<br><div style='text-align:center; color:#94a3b8; font-size:0.8rem;'>Intelligence Flow Solutions © 2026 • Termos de Uso • Privacidade</div>", unsafe_allow_html=True)
+    st.markdown("<br><div style='text-align:center; color:#94a3b8; font-size:0.8rem;'>Intelligence Flow Solutions © 2026</div>", unsafe_allow_html=True)
