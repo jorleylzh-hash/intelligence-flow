@@ -1,13 +1,26 @@
 import streamlit as st
+import yfinance as yf  # <--- Importante ter este import
+import os
+import shutil
+
+# --- CORREÇÃO DE EMERGÊNCIA PARA O RENDER ---
+# Define o cache do yfinance para a pasta temporária do Linux
+# Isso resolve o erro 'database is locked'
+cache_dir = "/tmp/yf_cache"
+if os.path.exists(cache_dir):
+    shutil.rmtree(cache_dir)  # Limpa cache antigo se existir
+if not os.path.exists(cache_dir):
+    os.makedirs(cache_dir)
+    
+yf.set_tz_cache_location(cache_dir)
+# --------------------------------------------
+
 import modules.dashboard_v3 as dashboard_v3
 import modules.trading_desk as trading_desk
 import modules.auth_engine as auth_engine
 import modules.ui_styles as ui_styles
 
-yf.set_tz_cache_location("/tmp/yf_cache")
-if not os.path.exists("/tmp/yf_cache"):
-    os.makedirs("/tmp/yf_cache")
-
+# ... (O restante do seu código app.py continua igual abaixo) ...
 
 # 1. SETUP INICIAL
 st.set_page_config(page_title="Intelligence Flow", page_icon="💠", layout="wide")
@@ -95,4 +108,5 @@ elif st.session_state.page == 'trader':
 
 # 5. RODAPÉ CNPJ
 ui_styles.show_footer_cnpj()
+
 
