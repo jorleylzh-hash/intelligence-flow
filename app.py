@@ -1,6 +1,4 @@
 import streamlit as st
-import time
-# Importa as funcionalidades da pasta modules
 from modules import ui_styles, auth_engine, dashboard_v3
 
 # --- 1. CONFIGURAÇÃO INICIAL ---
@@ -9,25 +7,25 @@ st.set_page_config(page_title="Intelligence Flow", layout="wide", page_icon="�
 # Inicializa o Banco de Dados
 auth_engine.init_db()
 
-# Verifica se existe sessão de login, se não, cria como Falso
+# Verifica sessão
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'username' not in st.session_state:
     st.session_state.username = ""
 
-# Aplica o estilo visual (CSS)
+# Aplica estilo
 ui_styles.apply_design()
 
-# --- 2. LÓGICA DE NAVEGAÇÃO (O PORTEIRO) ---
+# --- 2. NAVEGAÇÃO ---
 if not st.session_state.logged_in:
-    # === TELA DE LOGIN ===
+    # === TELA DE LOGIN / CADASTRO ===
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
         ui_styles.header_animation()
         st.markdown("<br>", unsafe_allow_html=True)
         
-        tab_login, tab_register = st.tabs(["🔒 ACESSAR SISTEMA", "📝 SOLICITAR ACESSO"])
+        tab_login, tab_register = st.tabs(["🔒 ACESSAR SISTEMA", "📝 NOVO CADASTRO"])
         
         with tab_login:
             st.markdown('<div class="login-box">', unsafe_allow_html=True)
@@ -38,13 +36,13 @@ if not st.session_state.logged_in:
                 user = auth_engine.verify_login(email, password)
                 if user:
                     st.session_state.logged_in = True
-                    st.session_state.username = user[0][2] # Pega o nome do usuário
-                    st.rerun() # Recarrega a página para entrar
+                    st.session_state.username = user[0][2]
+                    st.rerun()
                 else:
-                    st.error("Credenciais inválidas.")
+                    st.error("Acesso Negado: Email ou Senha incorretos.")
             st.markdown('</div>', unsafe_allow_html=True)
 
-     with tab_register:
+        with tab_register:
             st.warning("⚠️ O envio de email está desativado. Copie sua senha abaixo.")
             new_name = st.text_input("Nome Completo")
             new_email = st.text_input("Seu Email")
@@ -61,9 +59,7 @@ if not st.session_state.logged_in:
                         st.markdown("### 🔐 SUA CREDENCIAL")
                         st.info("Abaixo está sua senha provisória. Use o botão ao lado para copiar.")
                         
-                        # --- CORREÇÃO DA CÓPIA ---
-                        # Usamos um code block limpo. O botão de copiar do Streamlit 
-                        # copia EXATAMENTE o que está dentro da caixa cinza.
+                        # --- CORREÇÃO DA CÓPIA (SENHA LIMPA) ---
                         st.code(auto_pass, language="text")
                         
                         st.caption("Dica: Cole a senha no Bloco de Notas antes de sair.")
@@ -71,8 +67,13 @@ if not st.session_state.logged_in:
                         st.error("❌ Este email já possui cadastro.")
                 else:
                     st.error("Preencha todos os campos.")
-                    st.rerun()
-    
-    # Chama o Dashboard que está na pasta modules
-    dashboard_v3.show_dashboard()
 
+else:
+    # === TELA DO DASHBOARD ===
+    with st.sidebar:
+        st.markdown(f"### 👤 {st.session_state.username}")
+        if st.button("SAIR DO SISTEMA (LOGOUT)"):
+            st.session_state.logged_in = False
+            st.rerun()
+    
+    dashboard_v3.show_dashboard()
