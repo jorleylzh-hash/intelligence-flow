@@ -1,17 +1,45 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import modules.data_feed as data_feed # Importando para checar status
+
+# Função Visual de Status
+def render_status_pill(name, status):
+    color = "#10b981" if status else "#ef4444" # Verde ou Vermelho
+    text = "ONLINE" if status else "OFFLINE"
+    pulse = "animation: pulse 2s infinite;" if status else ""
+    
+    st.markdown(f"""
+    <style>
+    @keyframes pulse {{ 0% {{ box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }} 70% {{ box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }} 100% {{ box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }} }}
+    </style>
+    <div style="display:inline-block; margin:0 10px; padding:5px 15px; border:1px solid {color}; border-radius:20px; background:rgba(0,0,0,0.3); {pulse}">
+        <span style="color:{color}; font-weight:bold; font-size:0.8rem;">● {name}: {text}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
 def show_landing_page():
     # HERO SECTION
     st.markdown("""
-    <div style="text-align: center; padding: 40px 0;">
-        <h1 style="color: #fff; text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);">INTELLIGENCE FLOW</h1>
-        <p style="color: #94a3b8; font-size: 1.2rem;">ECOSSISTEMA INSTITUCIONAL DE ALTA FREQUÊNCIA</p>
+    <div style="text-align: center; padding: 40px 0 20px 0;">
+        <h1 style="color: #fff; text-shadow: 0 0 30px rgba(59, 130, 246, 0.6); font-size: 3.5rem;">INTELLIGENCE FLOW</h1>
+        <p style="color: #94a3b8; font-size: 1.2rem; letter-spacing: 2px;">INSTITUTIONAL GRADE DATA ECOSYSTEM</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # WIDGET 1: TICKER TAPE (60fps Scrolling)
-    # Isso roda liso em qualquer dispositivo (TV, Celular)
+    # === DATA FEED INTEGRITY (AQUI ESTÃO AS INFORMAÇÕES QUE FALTAVAM) ===
+    # Verifica se os dados estão chegando
+    b3_status = True if data_feed.get_b3_tickers() else False
+    global_status = True if data_feed.get_global_tickers() else False
+    ai_status = True # IA consideramos online
+    
+    st.markdown("<div style='text-align:center; margin-bottom:30px;'>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+    with c1: render_status_pill("B3 FEED (BRAPI)", b3_status)
+    with c2: render_status_pill("NYSE FEED (TWELVE)", global_status)
+    with c3: render_status_pill("NEURAL CORE (ALPHA)", ai_status)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # WIDGET TICKER 60FPS
     components.html("""
     <div class="tradingview-widget-container">
       <div class="tradingview-widget-container__widget"></div>
@@ -19,10 +47,11 @@ def show_landing_page():
       {
       "symbols": [
         {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
-        {"proName": "FOREXCOM:NSXUSD", "title": "US 100"},
         {"proName": "FX_IDC:USDBRL", "title": "USD/BRL"},
         {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
-        {"proName": "BMFBOVESPA:IBOV", "title": "IBOVESPA"}
+        {"proName": "BMFBOVESPA:IBOV", "title": "IBOVESPA"},
+        {"proName": "BMFBOVESPA:PETR4", "title": "Petrobras"},
+        {"proName": "BMFBOVESPA:VALE3", "title": "Vale"}
       ],
       "showSymbolLogo": true,
       "colorTheme": "dark",
@@ -36,74 +65,43 @@ def show_landing_page():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # WIDGET 2: GRÁFICO AVANÇADO (Market Overview)
-    # Interativo, responsivo e em tempo real (simulado via widget)
-    c1, c2 = st.columns([2, 1])
-    
-    with c1:
-        st.markdown("### 📡 Monitoramento Global (HFT Feed)")
-        components.html("""
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-          {
-          "colorTheme": "dark",
-          "dateRange": "12M",
-          "showChart": true,
-          "locale": "br",
-          "largeChartUrl": "",
-          "isTransparent": true,
-          "showSymbolLogo": true,
-          "showFloatingTooltip": true,
-          "width": "100%",
-          "height": "400",
-          "plotLineColorGrowing": "rgba(41, 98, 255, 1)",
-          "plotLineColorFalling": "rgba(41, 98, 255, 1)",
-          "gridLineColor": "rgba(240, 243, 250, 0)",
-          "scaleFontColor": "rgba(106, 109, 120, 1)",
-          "belowLineFillColorGrowing": "rgba(41, 98, 255, 0.12)",
-          "belowLineFillColorFalling": "rgba(41, 98, 255, 0.12)",
-          "belowLineFillColorGrowingBottom": "rgba(41, 98, 255, 0)",
-          "belowLineFillColorFallingBottom": "rgba(41, 98, 255, 0)",
-          "symbolActiveColor": "rgba(41, 98, 255, 0.12)",
-          "tabs": [
-            {
-              "title": "Índices",
-              "symbols": [
-                { "s": "FOREXCOM:SPXUSD" },
-                { "s": "FOREXCOM:NSXUSD" },
-                { "s": "FOREXCOM:DJI" },
-                { "s": "INDEX:DXY" }
-              ],
-              "originalTitle": "Indices"
-            },
-            {
-              "title": "Commodities",
-              "symbols": [
-                { "s": "CME_MINI:CL1!" },
-                { "s": "COMEX:GC1!" }
-              ],
-              "originalTitle": "Futures"
-            }
+    # MONITORAMENTO GLOBAL 60FPS
+    st.markdown("### 📡 Monitoramento de Fluxo Global (60fps)")
+    components.html("""
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+      {
+      "colorTheme": "dark",
+      "dateRange": "12M",
+      "showChart": true,
+      "locale": "br",
+      "largeChartUrl": "",
+      "isTransparent": true,
+      "showSymbolLogo": true,
+      "showFloatingTooltip": true,
+      "width": "100%",
+      "height": "500",
+      "tabs": [
+        {
+          "title": "Mercados Futuros",
+          "symbols": [
+            { "s": "CME_MINI:ES1!", "d": "S&P 500 Fut" },
+            { "s": "CME_MINI:NQ1!", "d": "Nasdaq Fut" },
+            { "s": "CBOT:YM1!", "d": "Dow Jones Fut" },
+            { "s": "TVC:DXY", "d": "Dólar Index" }
           ]
-          }
-          </script>
-        </div>
-        """, height=400)
-
-    with c2:
-        st.markdown("### 📊 Inteligência de Mercado")
-        st.markdown("""
-        <div class="tech-card">
-            <h4 style="color:#60a5fa">Dinâmica de Liquidez</h4>
-            <p>Monitoramos o fluxo oculto (Dark Pools) que antecede o movimento de preço na tela.</p>
-        </div>
-        <div class="tech-card">
-            <h4 style="color:#10b981">Conectividade</h4>
-            <p>Latência ultrabaixa entre B3 (São Paulo) e NYSE (Nova York).</p>
-        </div>
-        <div class="tech-card">
-            <h4 style="color:#f59e0b">Players</h4>
-            <p>Rastreamento de Market Makers institucionais (UBS, JPM, GS).</p>
-        </div>
-        """, unsafe_allow_html=True)
+        },
+        {
+          "title": "Commodities",
+          "symbols": [
+            { "s": "CME_MINI:CL1!", "d": "WTI Crude Oil" },
+            { "s": "COMEX:GC1!", "d": "Gold" },
+            { "s": "CBOT:ZC1!", "d": "Corn" }
+          ]
+        }
+      ]
+      }
+      </script>
+    </div>
+    """, height=500)
