@@ -2,3 +2,5 @@ streamlit
 yfinance
 pandas
 plotly
+bcrypt
+# Para envio de email usamos smtplib que já vem no Python
