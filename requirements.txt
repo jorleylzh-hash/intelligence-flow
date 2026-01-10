@@ -3,3 +3,5 @@ streamlit-authenticator==0.3.2
 pandas
 yfinance
 plotly
+streamlit-lottie
+requests
