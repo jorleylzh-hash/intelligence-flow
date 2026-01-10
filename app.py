@@ -2,56 +2,62 @@ import streamlit as st
 import modules.dashboard_v3 as dashboard_v3
 import modules.auth_engine as auth_engine
 
-# 1. CONFIGURAÇÃO (OBRIGATÓRIO SER A PRIMEIRA LINHA)
+# 1. CONFIGURAÇÃO (Full Screen e Ícone)
 st.set_page_config(
     page_title="Intelligence Flow",
-    page_icon="🌪️",
+    page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# 2. INICIALIZAÇÃO DE ESTADO
+# 2. ESTADO DE SESSÃO
 if 'authentication_status' not in st.session_state:
     st.session_state['authentication_status'] = None
 
-# 3. LÓGICA DE NAVEGAÇÃO
+# 3. BARRA LATERAL (Menu)
 st.sidebar.markdown("### Navegação")
-page = st.sidebar.radio("Ir para:", ["🏠 Institucional", "🔐 Mesa de Operações"])
+# Mudança de nome solicitada: Mesa Proprietária -> Área do Trader
+page = st.sidebar.radio("Ir para:", ["🏠 Página Institucional", "📈 Área do Trader"])
 
-if page == "🏠 Institucional":
-    # Verifica se a função existe para evitar erro
-    if hasattr(dashboard_v3, 'show_landing_page'):
-        dashboard_v3.show_landing_page()
-    else:
-        st.error("Erro: A página institucional não foi encontrada no módulo.")
+if page == "🏠 Página Institucional":
+    dashboard_v3.show_landing_page()
 
-elif page == "🔐 Mesa de Operações":
-    # --- AQUI ESTAVA O ERRO DE INDENTAÇÃO ---
-    # Tudo abaixo deste elif precisa ter 4 espaços de recuo
+elif page == "📈 Área do Trader":
+    # Verifica o motor de autenticação
     if hasattr(auth_engine, 'get_authenticator'):
         authenticator = auth_engine.get_authenticator()
         
-        # COMANDO DE LOGIN (Versão 0.3.2)
-        # Se você atualizou o requirements.txt, este comando vai funcionar:
-        name, authentication_status, username = authenticator.login('Login', 'main')
-        
-        if st.session_state["authentication_status"]:
-            # --- ÁREA LOGADA ---
-            authenticator.logout('Sair', 'sidebar')
-            st.title(f"Mesa de Operações | Bem-vindo, {name}")
-            st.markdown("---")
-            st.success("✅ Conexão segura estabelecida.")
+        # --- CORREÇÃO DO ERRO DE LOGIN ---
+        # Na versão nova, não se passa mais 'Login' como primeiro argumento solto.
+        # Usa-se apenas location='main' ou chama direto.
+        try:
+            name, authentication_status, username = authenticator.login(location='main')
+        except TypeError:
+            # Fallback caso a versão varie, mas o padrão moderno é esse:
+            name, authentication_status, username = authenticator.login()
             
-            # Aqui entra o código da Mesa (Gráficos, boletas, etc.)
-            col1, col2 = st.columns(2)
-            col1.metric("Saldo", "R$ 100.000,00", "+1.2%")
-            col2.metric("Latência", "24ms", "-5ms")
+        if st.session_state["authentication_status"]:
+            # USUÁRIO LOGADO
+            authenticator.logout('Sair', 'sidebar')
+            
+            st.title(f"Área do Trader | {name}")
+            st.markdown("---")
+            st.success("✅ Conexão segura estabelecida com o servidor de dados.")
+            
+            # Exemplo de conteúdo da Área do Trader
+            st.info("Bem-vindo à mesa de operações. Selecione o ativo no menu superior (Futuro).")
+            
+            # Simulando um painel rápido
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Saldo Disponível", "R$ 152.450,00", "0.0%")
+            c2.metric("P&L Diário", "R$ 3.240,00", "+2.1%")
+            c3.metric("Risco/Retorno", "1:3", "Ideal")
             
         elif st.session_state["authentication_status"] == False:
             st.error('Usuário ou senha incorretos.')
             
         elif st.session_state["authentication_status"] == None:
-            st.warning('Por favor, insira suas credenciais de acesso.')
+            st.warning('Por favor, realize o login para acessar as ferramentas de trading.')
             
     else:
-        st.error("Erro crítico: O motor de autenticação (auth_engine) falhou ao carregar.")
+        st.error("Erro crítico: O sistema de autenticação não pode ser carregado.")
