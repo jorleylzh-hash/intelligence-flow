@@ -2,62 +2,45 @@ import streamlit as st
 import modules.dashboard_v3 as dashboard_v3
 import modules.auth_engine as auth_engine
 
-# 1. CONFIGURAÇÃO (Full Screen e Ícone)
-st.set_page_config(
-    page_title="Intelligence Flow",
-    page_icon="💠",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# 1. Configuração Inicial
+st.set_page_config(page_title="Intelligence Flow", page_icon="💠", layout="wide", initial_sidebar_state="collapsed")
 
-# 2. ESTADO DE SESSÃO
 if 'authentication_status' not in st.session_state:
     st.session_state['authentication_status'] = None
 
-# 3. BARRA LATERAL (Menu)
-st.sidebar.markdown("### Navegação")
-# Mudança de nome solicitada: Mesa Proprietária -> Área do Trader
-page = st.sidebar.radio("Ir para:", ["🏠 Página Institucional", "📈 Área do Trader"])
+# 2. Navegação
+st.sidebar.title("Navegação")
+page = st.sidebar.radio("Ir para:", ["🏠 Institucional", "📈 Área do Trader"])
 
-if page == "🏠 Página Institucional":
+if page == "🏠 Institucional":
+    # Carrega a página NOVA com gráficos 60fps
     dashboard_v3.show_landing_page()
 
 elif page == "📈 Área do Trader":
-    # Verifica o motor de autenticação
     if hasattr(auth_engine, 'get_authenticator'):
         authenticator = auth_engine.get_authenticator()
         
-        # --- CORREÇÃO DO ERRO DE LOGIN ---
-        # Na versão nova, não se passa mais 'Login' como primeiro argumento solto.
-        # Usa-se apenas location='main' ou chama direto.
+        # --- CORREÇÃO DO ERRO 'MULTIPLE FORMS' ---
+        # Adicionamos key='login_unique' para garantir que não haja conflito
         try:
-            name, authentication_status, username = authenticator.login(location='main')
+            name, authentication_status, username = authenticator.login(location='main', key='login_unique')
         except TypeError:
-            # Fallback caso a versão varie, mas o padrão moderno é esse:
-            name, authentication_status, username = authenticator.login()
-            
+            # Fallback para versões diferentes da lib
+            name, authentication_status, username = authenticator.login(key='login_unique')
+
         if st.session_state["authentication_status"]:
-            # USUÁRIO LOGADO
             authenticator.logout('Sair', 'sidebar')
+            st.title(f"Mesa de Operações | {name}")
+            st.success("✅ Acesso Liberado: Feed de Dados em Tempo Real Ativo.")
             
-            st.title(f"Área do Trader | {name}")
-            st.markdown("---")
-            st.success("✅ Conexão segura estabelecida com o servidor de dados.")
-            
-            # Exemplo de conteúdo da Área do Trader
-            st.info("Bem-vindo à mesa de operações. Selecione o ativo no menu superior (Futuro).")
-            
-            # Simulando um painel rápido
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Saldo Disponível", "R$ 152.450,00", "0.0%")
-            c2.metric("P&L Diário", "R$ 3.240,00", "+2.1%")
-            c3.metric("Risco/Retorno", "1:3", "Ideal")
+            # Placeholder da Mesa
+            c1, c2 = st.columns(2)
+            c1.metric("Saldo", "R$ 50.000,00", "+1.5%")
+            c2.metric("Latência", "12ms", "Estável")
             
         elif st.session_state["authentication_status"] == False:
             st.error('Usuário ou senha incorretos.')
-            
         elif st.session_state["authentication_status"] == None:
-            st.warning('Por favor, realize o login para acessar as ferramentas de trading.')
-            
+            st.info('Por favor, faça login para acessar.')
     else:
-        st.error("Erro crítico: O sistema de autenticação não pode ser carregado.")
+        st.error("Erro no módulo de autenticação.")
