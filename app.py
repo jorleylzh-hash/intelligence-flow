@@ -1,23 +1,26 @@
 import streamlit as st
 import time
+# Importa as funcionalidades da pasta modules
 from modules import ui_styles, auth_engine, dashboard_v3
 
-# Configuração deve ser a primeira linha
+# --- 1. CONFIGURAÇÃO INICIAL ---
 st.set_page_config(page_title="Intelligence Flow", layout="wide", page_icon="🌪️")
 
-# Inicializa Banco de Dados
+# Inicializa o Banco de Dados
 auth_engine.init_db()
 
-# Gerenciamento de Sessão (Login)
+# Verifica se existe sessão de login, se não, cria como Falso
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+if 'username' not in st.session_state:
+    st.session_state.username = ""
 
-# Aplica o Design
+# Aplica o estilo visual (CSS)
 ui_styles.apply_design()
 
-# --- NAVEGAÇÃO ---
+# --- 2. LÓGICA DE NAVEGAÇÃO (O PORTEIRO) ---
 if not st.session_state.logged_in:
-    # TELA DE APRESENTAÇÃO / LOGIN
+    # === TELA DE LOGIN ===
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
@@ -35,42 +38,39 @@ if not st.session_state.logged_in:
                 user = auth_engine.verify_login(email, password)
                 if user:
                     st.session_state.logged_in = True
-                    st.session_state.username = user[0][2] # Nome
-                    st.rerun()
+                    st.session_state.username = user[0][2] # Pega o nome do usuário
+                    st.rerun() # Recarrega a página para entrar
                 else:
                     st.error("Credenciais inválidas.")
             st.markdown('</div>', unsafe_allow_html=True)
 
         with tab_register:
-            st.warning("O cadastro gera credenciais automáticas enviadas por email.")
+            st.warning("O cadastro gera credenciais automáticas.")
             new_name = st.text_input("Nome Completo")
             new_email = st.text_input("Seu Melhor Email")
             
             if st.button("GERAR CREDENCIAIS"):
                 if new_name and new_email:
-                    # Gera senha automática
+                    # Gera senha e salva
                     auto_pass = auth_engine.generate_password()
-                    
-                    # Salva no Banco
                     if auth_engine.create_user(new_email, auto_pass, new_name):
-                        # Envia Email (Simulado se não configurar SMTP)
                         auth_engine.send_confirmation_email(new_email, new_name, auto_pass)
-                        
-                        st.success("Cadastro realizado!")
-                        st.info(f"📧 EMAIL ENVIADO PARA: {new_email}")
-                        st.code(f"SENHA GERADA (Cópia de Segurança): {auto_pass}")
+                        st.success("Cadastro realizado com sucesso!")
+                        st.info(f"📧 Usuário: {new_email}")
+                        st.code(f"🔑 Senha: {auto_pass}") # Mostra a senha na tela
                     else:
                         st.error("Email já cadastrado.")
                 else:
                     st.error("Preencha todos os campos.")
 
 else:
-    # USUÁRIO LOGADO -> MOSTRA O DASHBOARD
+    # === TELA DO DASHBOARD (SÓ ENTRA AQUI SE LOGGED_IN FOR TRUE) ===
+    # Barra Lateral com Logout
     with st.sidebar:
-        st.write(f"Usuário: **{st.session_state.username}**")
-        if st.button("LOGOUT"):
+        st.markdown(f"### 👤 {st.session_state.username}")
+        if st.button("SAIR DO SISTEMA (LOGOUT)"):
             st.session_state.logged_in = False
             st.rerun()
     
-    # Chama o módulo do Dashboard
+    # Chama o Dashboard que está na pasta modules
     dashboard_v3.show_dashboard()
