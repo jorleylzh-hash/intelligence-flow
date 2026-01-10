@@ -40,6 +40,12 @@ def apply_pro_styles():
 # --- CÁLCULOS TÉCNICOS ---
 def calculate_vwap(df):
     try:
+        # Garante que os dados sejam numéricos para evitar erros
+        df['High'] = pd.to_numeric(df['High'], errors='coerce')
+        df['Low'] = pd.to_numeric(df['Low'], errors='coerce')
+        df['Close'] = pd.to_numeric(df['Close'], errors='coerce')
+        df['Volume'] = pd.to_numeric(df['Volume'], errors='coerce')
+        
         df['Typical_Price'] = (df['High'] + df['Low'] + df['Close']) / 3
         df['VP'] = df['Typical_Price'] * df['Volume']
         df['VWAP'] = df['VP'].cumsum() / df['Volume'].cumsum()
@@ -49,6 +55,13 @@ def calculate_vwap(df):
 def get_intraday_data(ticker):
     try:
         df = yf.download(ticker, period="1d", interval="5m", progress=False)
+        
+        # --- CORREÇÃO CRÍTICA AQUI ---
+        # Se vier com cabeçalho duplo (MultiIndex), nós removemos o nível do Ticker
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+        # -----------------------------
+            
         return calculate_vwap(df)
     except: return pd.DataFrame()
 
@@ -70,18 +83,40 @@ def get_live_quotes():
 
 def plot_technical_chart(symbol, df_data):
     if df_data.empty: return go.Figure()
+    
     fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.add_trace(go.Candlestick(x=df_data.index, open=df_data['Open'], high=df_data['High'], low=df_data['Low'], close=df_data['Close'], name="Preço"), secondary_y=True)
+    
+    # Candles
+    fig.add_trace(go.Candlestick(
+        x=df_data.index, 
+        open=df_data['Open'], high=df_data['High'], 
+        low=df_data['Low'], close=df_data['Close'], 
+        name="Preço"
+    ), secondary_y=True)
+    
+    # VWAP
     if 'VWAP' in df_data.columns:
-        fig.add_trace(go.Scatter(x=df_data.index, y=df_data['VWAP'], mode='lines', name='VWAP', line=dict(color='#facc15', width=2)), secondary_y=True)
-    colors = ['#ef4444' if r['Open'] - r['Close'] > 0 else '#10b981' for i, r in df_data.iterrows()]
-    fig.add_trace(go.Bar(x=df_data.index, y=df_data['Volume'], name="Vol", marker_color=colors, opacity=0.3), secondary_y=False)
+        fig.add_trace(go.Scatter(
+            x=df_data.index, y=df_data['VWAP'], 
+            mode='lines', name='VWAP', 
+            line=dict(color='#facc15', width=2)
+        ), secondary_y=True)
+        
+    # Volume (Correção da Cor)
+    # Agora que o DF está achatado, 'r' será um valor simples e não uma Série
+    colors = ['#ef4444' if (r['Open'] - r['Close']) > 0 else '#10b981' for i, r in df_data.iterrows()]
+    
+    fig.add_trace(go.Bar(
+        x=df_data.index, y=df_data['Volume'], 
+        name="Vol", marker_color=colors, opacity=0.3
+    ), secondary_y=False)
+
     fig.update_layout(height=400, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="white"), margin=dict(l=10,r=10,t=30,b=10), xaxis_rangeslider_visible=False, showlegend=False)
     fig.update_yaxes(showgrid=False, visible=False, secondary_y=False)
     fig.update_yaxes(showgrid=True, gridcolor='#333', secondary_y=True)
     return fig
 
-# --- FUNÇÃO PRINCIPAL QUE O APP.PY ESTÁ PROCURANDO ---
+# --- FUNÇÃO PRINCIPAL ---
 def show_dashboard():
     apply_pro_styles()
     
