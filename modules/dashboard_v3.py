@@ -16,7 +16,7 @@ def get_market_teaser():
     tickers = {'S&P 500': '^GSPC', 'Dólar DXY': 'DX-Y.NYB', 'EWZ (Brasil)': 'EWZ'}
     try:
         # --- AQUI ESTÁ A CORREÇÃO (threads=False) ---
-        # Isso impede que o Render trave o banco de dados
+        # Isso impede que o Render trave o banco de dados ao baixar vários ativos
         data = yf.download(list(tickers.values()), period="2d", progress=False, threads=False)['Close']
         
         if isinstance(data.columns, pd.MultiIndex): 
@@ -54,7 +54,6 @@ def show_landing_page():
     """, unsafe_allow_html=True)
 
     # === TICKER TAPE (DADOS AO VIVO) ===
-    # Agora com a proteção contra erros
     teaser = get_market_teaser()
     if teaser:
         cols = st.columns(len(teaser))
@@ -71,7 +70,7 @@ def show_landing_page():
 
     st.markdown("---")
 
-    # === CONTEÚDO EDUCACIONAL (HME, SMC, ETC) ===
+    # === CONTEÚDO EDUCACIONAL ===
     
     # 1. HME vs Realidade
     c1, c2 = st.columns([1.5, 1])
