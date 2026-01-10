@@ -5,12 +5,13 @@ from email.mime.text import MIMEText
 import streamlit as st
 import random
 import string
+import requests
+import urllib.parse
 
 # --- 1. BANCO DE DADOS (SQLite Local) ---
 def init_db():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    # Cria tabela se não existir
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (email TEXT PRIMARY KEY, password TEXT, name TEXT)''')
     conn.commit()
@@ -43,43 +44,34 @@ def verify_login(email, password):
 
 # --- 2. GERADOR DE CREDENCIAIS ---
 def generate_password():
-    # Gera uma senha aleatória segura
     chars = string.ascii_letters + string.digits + "!@#$"
     return ''.join(random.choice(chars) for i in range(10))
 
-# --- 3. DISPARO DE EMAIL (SMTP) ---
+# --- 3. DISPARO DE EMAIL (Desativado/Simulado) ---
 def send_confirmation_email(email, name, password):
-    # ⚠️ CONFIGURAÇÃO DO SEU EMAIL (GMAIL EXEMPLO)
-    # Você precisa gerar uma "Senha de App" na sua conta Google
-    sender_email = "seu_email@gmail.com"  
-    sender_password = "sua_senha_de_app_aqui" 
-    
-    msg = MIMEText(f"""
-    Olá, {name}!
-    
-    Bem-vindo ao Intelligence Flow. Sua conta Institutional foi ativada.
-    
-    SEUS DADOS DE ACESSO:
-    Login: {email}
-    Senha Provisória: {password}
-    
-    Acesse agora para visualizar o fluxo macro.
-    
-    Att,
-    Equipe Intelligence Flow
-    """)
-    
-    msg['Subject'] = "Acesso Confirmado | Intelligence Flow"
-    msg['From'] = sender_email
-    msg['To'] = email
+    # Função mantida para compatibilidade, mas não envia sem SMTP configurado
+    return True
 
+# --- 4. DISPARO WHATSAPP (CallMeBot) ---
+def send_whatsapp_admin(email, name, password):
+    # ⚠️ CONFIGURE AQUI SEUS DADOS REAIS SE QUISER RECEBER
+    phone = "5541999999999"  # Seu celular com DDD
+    apikey = "123456"        # Sua API Key do CallMeBot
+    
+    message = f"""
+    🌪️ *INTELLIGENCE FLOW*
+    
+    👤 *Novo:* {name}
+    📧 *Email:* {email}
+    🔑 *Senha:* {password}
+    """
+    
+    encoded_msg = urllib.parse.quote(message)
+    url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={encoded_msg}&apikey={apikey}"
+    
     try:
-        # Se for testar local sem configurar email, comente as linhas abaixo
-        # server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        # server.login(sender_email, sender_password)
-        # server.sendmail(sender_email, email, msg.as_string())
-        # server.quit()
+        # Timeout curto para não travar o app se a API demorar
+        requests.get(url, timeout=5) 
         return True
-    except Exception as e:
-        print(e)
+    except Exception:
         return False
