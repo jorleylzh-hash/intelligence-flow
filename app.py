@@ -4,6 +4,11 @@ import modules.trading_desk as trading_desk
 import modules.auth_engine as auth_engine
 import modules.ui_styles as ui_styles
 
+yf.set_tz_cache_location("/tmp/yf_cache")
+if not os.path.exists("/tmp/yf_cache"):
+    os.makedirs("/tmp/yf_cache")
+
+
 # 1. SETUP INICIAL
 st.set_page_config(page_title="Intelligence Flow", page_icon="💠", layout="wide")
 ui_styles.apply_design()
@@ -90,3 +95,4 @@ elif st.session_state.page == 'trader':
 
 # 5. RODAPÉ CNPJ
 ui_styles.show_footer_cnpj()
+
