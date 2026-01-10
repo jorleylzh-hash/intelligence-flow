@@ -1,85 +1,131 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import plotly.express as px
+import random
+
+# Função auxiliar para desenhar cards de influência
+def render_driver_card(name, value, weight, correlation, explanation):
+    # Lógica de cor baseada na correlação
+    color = "#10b981" if correlation > 0 else "#ef4444"
+    corr_text = "Positiva" if correlation > 0 else "Inversa"
+    
+    st.markdown(f"""
+    <div style="background:rgba(30, 41, 59, 0.7); border-left:4px solid {color}; padding:15px; border-radius:8px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="margin:0; color:#fff;">{name}</h4>
+            <span style="background:{color}; color:white; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:bold;">Corr. {corr_text} ({correlation})</span>
+        </div>
+        <div style="font-size:1.2rem; font-weight:bold; color:#cbd5e1; margin-top:5px;">{value}</div>
+        <div style="font-size:0.85rem; color:#94a3b8; margin-top:5px;">
+            <i>Impacto no Preço:</i> <b>{weight}</b><br>
+            {explanation}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 def show_solutions():
-    st.markdown("## 💎 Soluções On-Demand")
-    st.markdown("Selecione os ativos para rodar a análise de correlação e viés em tempo real.")
+    st.markdown("## 💠 Mapa de Correlação & Drivers de Preço")
+    st.markdown("Selecione um ativo-alvo para mapear a rede de influências que compõe seu preço justo (Fair Value).")
 
-    # 1. SELEÇÃO DE ATIVOS
-    col_sel, col_act = st.columns([3, 1])
-    with col_sel:
-        # Multiselect profissional
-        assets = st.multiselect(
-            "Cesta de Ativos para Monitoramento:",
-            ["PETR4", "VALE3", "ITUB4", "BBAS3", "DOLAR", "S&P500"],
-            default=["PETR4", "VALE3", "DOLAR"]
-        )
-    with col_act:
-        st.write("")
-        st.write("")
-        if st.button("RODAR ANÁLISE ⚡", type="primary"):
-            st.success("Processamento Neural Iniciado...")
-
-    st.markdown("---")
-
-    # 2. ANÁLISE DE CORRELAÇÃO (MATRIZ)
-    st.subheader("1. Matriz de Correlação Cruzada")
-    st.markdown("Identifica quais ativos estão andando juntos (Correlação +1) ou opostos (Correlação -1).")
+    # 1. SELETOR DE ATIVO ALVO
+    target_asset = st.selectbox(
+        "Selecione o Ativo para Decomposição:",
+        ["WIN (Índice Futuro)", "WDO (Dólar Futuro)", "PETR4 (Petrobras)", "VALE3 (Vale)"]
+    )
     
-    # Simulação de dados para evitar erro de download no Render se API falhar
-    # Em produção real, isso viria do data_feed.py
-    data = {
-        'PETR4': np.random.normal(0, 1, 100),
-        'VALE3': np.random.normal(0, 1, 100),
-        'DOLAR': np.random.normal(0, 1, 100) * -0.5, # Correlação inversa simulada
-        'S&P500': np.random.normal(0, 1, 100) * 0.3
-    }
-    df = pd.DataFrame(data)
-    if assets:
-        # Filtra apenas os selecionados se existirem no df simulado
-        cols_to_show = [a for a in assets if a in df.columns]
-        if cols_to_show:
-            corr = df[cols_to_show].corr()
-            fig = px.imshow(corr, text_auto=True, aspect="auto", color_continuous_scale='RdBu_r', zmin=-1, zmax=1)
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font={'color': 'white'})
-            st.plotly_chart(fig, use_container_width=True)
-
-    # 3. VIÉS DE MERCADO E RESULTADOS
-    st.subheader("2. Viés Probabilístico & Spread")
-    
-    c1, c2, c3 = st.columns(3)
-    
-    # Card 1
-    with c1:
-        st.markdown("""
-        <div class="tech-card">
-            <h4>PETR4 vs PBR (ADR)</h4>
-            <p>Spread Atual: <span style="color:#10b981">+0.82% (Oportunidade)</span></p>
-            <p>Viés: <b>ALTA</b> (Fluxo Gringo Comprador)</p>
-            <div style="background:#10b981; height:5px; width:80%;"></div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Card 2
-    with c2:
-        st.markdown("""
-        <div class="tech-card">
-            <h4>VALE3 vs Minério (Dalian)</h4>
-            <p>Spread Atual: <span style="color:#ef4444">-1.20% (Caro)</span></p>
-            <p>Viés: <b>BAIXA</b> (China desacelerando)</p>
-            <div style="background:#ef4444; height:5px; width:60%;"></div>
-        </div>
-        """, unsafe_allow_html=True)
+    if st.button("GERAR MAPA DE INFLUÊNCIA ⚡", type="primary"):
+        st.markdown("---")
         
-    # Card 3
-    with c3:
-        st.markdown("""
-        <div class="tech-card">
-            <h4>Dólar vs Juros (DI)</h4>
-            <p>Correlação: <span style="color:#f59e0b">0.92 (Alta)</span></p>
-            <p>Viés: <b>NEUTRO</b> (Aguardando Payroll)</p>
-            <div style="background:#f59e0b; height:5px; width:50%;"></div>
-        </div>
-        """, unsafe_allow_html=True)
+        # LOGICA DO MAPA (SIMULAÇÃO INTELIGENTE)
+        
+        # === CENÁRIO 1: WIN (ÍNDICE FUTURO) ===
+        if "WIN" in target_asset:
+            col_main, col_drivers = st.columns([1, 2])
+            
+            with col_main:
+                st.markdown(f"""
+                <div style="text-align:center; padding:30px; background:#0f172a; border:2px solid #3b82f6; border-radius:15px; box-shadow:0 0 20px rgba(59, 130, 246, 0.3);">
+                    <h1 style="color:#3b82f6; margin:0;">WIN</h1>
+                    <p style="color:#94a3b8;">Índice Futuro B3</p>
+                    <h2 style="color:#fff;">128.500</h2>
+                    <hr style="border-color:#1e293b;">
+                    <p style="font-size:0.9rem; color:#cbd5e1;">Viés Calculado:</p>
+                    <div style="background:#10b981; color:white; padding:5px; border-radius:5px; font-weight:bold;">VIÉS DE ALTA LEVE</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with col_drivers:
+                st.markdown("### 🔗 Drivers de Preço (O que move o WIN?)")
+                render_driver_card(
+                    "S&P 500 (EUA)", "5.230 pts (+0.4%)", "Alta Relevância", 0.85,
+                    "O humor de NY dita a abertura. S&P subindo puxa fluxo comprador para Emergentes."
+                )
+                render_driver_card(
+                    "VALE3 + PETR4", "Carteira Teórica", "Peso: ~25% do Índice", 0.90,
+                    "As Blue Chips carregam o índice. Ambas positivas = Índice forte."
+                )
+                render_driver_card(
+                    "DI1F27 (Juros Futuros)", "10.45% (-0.05%)", "Alta Relevância", -0.92,
+                    "Correlação INVERSA. Juro caindo diminui custo de capital e impulsiona Bolsa."
+                )
+
+        # === CENÁRIO 2: PETR4 ===
+        elif "PETR4" in target_asset:
+            col_main, col_drivers = st.columns([1, 2])
+            
+            with col_main:
+                st.markdown(f"""
+                <div style="text-align:center; padding:30px; background:#0f172a; border:2px solid #f59e0b; border-radius:15px; box-shadow:0 0 20px rgba(245, 158, 11, 0.3);">
+                    <h1 style="color:#f59e0b; margin:0;">PETR4</h1>
+                    <p style="color:#94a3b8;">Petrobras PN</p>
+                    <h2 style="color:#fff;">R$ 38,45</h2>
+                    <hr style="border-color:#1e293b;">
+                    <p style="font-size:0.9rem; color:#cbd5e1;">Spread de Arbitragem:</p>
+                    <div style="background:#10b981; color:white; padding:5px; border-radius:5px; font-weight:bold;">+0.8% (COMPRA)</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with col_drivers:
+                st.markdown("### 🔗 Drivers de Preço (O que move a PETR4?)")
+                render_driver_card(
+                    "PBR (ADR Nova York)", "US$ 15.40", "Paridade Direta", 0.99,
+                    "O preço 'mãe'. O robô calcula PBR * Dólar para achar o preço justo."
+                )
+                render_driver_card(
+                    "Petróleo Brent", "US$ 82.10 (+1.2%)", "Commodity Base", 0.70,
+                    "Matéria prima sobe, receita projetada sobe. Correlação positiva forte."
+                )
+                render_driver_card(
+                    "Risco Político (Brasília)", "Ruído Baixo Hoje", "Fator de Desconto", -0.50,
+                    "Notícias sobre intervenção aumentam o deságio em relação aos pares internacionais."
+                )
+
+        # === CENÁRIO 3: WDO (DÓLAR) ===
+        elif "WDO" in target_asset:
+            col_main, col_drivers = st.columns([1, 2])
+            
+            with col_main:
+                st.markdown(f"""
+                <div style="text-align:center; padding:30px; background:#0f172a; border:2px solid #10b981; border-radius:15px; box-shadow:0 0 20px rgba(16, 185, 129, 0.3);">
+                    <h1 style="color:#10b981; margin:0;">WDO</h1>
+                    <p style="color:#94a3b8;">Dólar Futuro</p>
+                    <h2 style="color:#fff;">5.015,00</h2>
+                    <hr style="border-color:#1e293b;">
+                    <p style="font-size:0.9rem; color:#cbd5e1;">Fluxo Cambial:</p>
+                    <div style="background:#ef4444; color:white; padding:5px; border-radius:5px; font-weight:bold;">SAÍDA LÍQUIDA (ALTA)</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with col_drivers:
+                st.markdown("### 🔗 Drivers de Preço (O que move o Dólar?)")
+                render_driver_card(
+                    "DXY (Dólar Global)", "104.50 (+0.3%)", "Força Global", 0.80,
+                    "Se o Dólar ganha força contra Euro e Yen, tende a ganhar contra o Real."
+                )
+                render_driver_card(
+                    "Treasuries 10Y (US)", "4.30% (+1.5%)", "Fly to Quality", 0.85,
+                    "Juro americano sobe = Dinheiro sai do Brasil para os EUA = Dólar sobe."
+                )
+                render_driver_card(
+                    "Commodities (CRB)", "Índice em Queda", "Termos de Troca", -0.60,
+                    "Brasil exporta commodities. Preço baixo = Menos dólar entrando = Dólar sobe."
+                )
