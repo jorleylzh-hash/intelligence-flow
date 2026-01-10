@@ -1,58 +1,51 @@
 import streamlit as st
 import modules.dashboard_v3 as dashboard_v3
 import modules.auth_engine as auth_engine
+import time
 
-# --- CONFIGURAÇÃO DA PÁGINA (Deve ser a primeira linha) ---
+# 1. Configuração da Página (Primeira linha obrigatória)
 st.set_page_config(
     page_title="Intelligence Flow | Institutional",
     page_icon="🌪️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# --- INICIALIZAÇÃO DE ESTADO ---
+# 2. Inicializar Estado de Autenticação
 if 'authentication_status' not in st.session_state:
     st.session_state['authentication_status'] = None
 
-# --- BARRA LATERAL (LOGIN) ---
-with st.sidebar:
-    st.title("🔐 Acesso Restrito")
-    # Chama o motor de autenticação (mas não bloqueia o app principal)
+# 3. Navegação Principal (Menu Lateral)
+st.sidebar.title("Navegação")
+selection = st.sidebar.radio("Ir para:", ["🏠 Página Institucional", "🔐 Área de Membros"])
+
+# 4. Roteamento de Páginas
+if selection == "🏠 Página Institucional":
+    # Carrega a página pública (SEM LOGIN)
+    dashboard_v3.show_landing_page()
+
+elif selection == "🔐 Área de Membros":
+    # Carrega a lógica de Login
     authenticator = auth_engine.get_authenticator()
-    name, authentication_status, username = authenticator.login('Login', 'main')
-
-# --- LÓGICA DE EXIBIÇÃO ---
-
-if st.session_state['authentication_status']:
-    # === CENÁRIO 1: USUÁRIO LOGADO (ÁREA VIP) ===
-    # Aqui você mostraria as ferramentas avançadas/operacionais
-    st.sidebar.success(f"Bem-vindo, {name}!")
-    st.sidebar.write("---")
     
-    # Menu de Navegação do Usuário Logado
-    page = st.sidebar.radio("Navegação", ["Home Institucional", "Mesa de Operações", "Gestão de Risco"])
-    
-    if page == "Home Institucional":
-        dashboard_v3.show_dashboard()
-    elif page == "Mesa de Operações":
-        st.title("📈 Mesa de Operações (Área Privada)")
-        st.info("Aqui entram os gráficos avançados, boletas e calculadoras exclusivas para assinantes.")
-        # import modules.trading_desk as trading
-        # trading.show()
-    elif page == "Gestão de Risco":
-        st.write("Ferramentas de Risco...")
+    # Se já estiver logado
+    if st.session_state["authentication_status"]:
+        st.sidebar.success(f"Logado como: {st.session_state['name']}")
+        authenticator.logout('Sair', 'sidebar')
         
-    authenticator.logout('Sair', 'sidebar')
-
-else:
-    # === CENÁRIO 2: VISITANTE (PÁGINA PÚBLICA) ===
-    # Mostra a página corporativa "Fantástica" para vender o produto
-    dashboard_v3.show_dashboard()
-    
-    # Se a senha estiver errada
-    if st.session_state['authentication_status'] == False:
-        st.sidebar.error('Usuário ou senha incorretos')
-    
-    # Se não tiver tentado logar ainda
-    elif st.session_state['authentication_status'] == None:
-        st.sidebar.warning('Faça login para acessar a Mesa de Operações.')
+        st.title("🖥️ Mesa de Operações (Restrito)")
+        st.success("Acesso Autorizado. Carregando ferramentas de trading...")
+        # Aqui você chamaria o módulo real: modules.trading_desk.show()
+        st.info("Gráficos em tempo real e boletas estariam aqui.")
+        
+    # Se NÃO estiver logado
+    else:
+        st.markdown("## 🔐 Acesso à Mesa de Operações")
+        st.write("Área exclusiva para assinantes e operadores da Intelligence Flow.")
+        
+        name, authentication_status, username = authenticator.login('Login', 'main')
+        
+        if authentication_status == False:
+            st.error('Usuário ou senha incorretos.')
+        elif authentication_status == None:
+            st.warning('Por favor, insira suas credenciais.')
