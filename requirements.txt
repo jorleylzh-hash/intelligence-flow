@@ -5,3 +5,4 @@ plotly
 bcrypt
 requests
 streamlit-lottie
+streamlit-authenticator
