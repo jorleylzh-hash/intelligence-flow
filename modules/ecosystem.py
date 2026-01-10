@@ -1,66 +1,129 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 def show_ecosystem():
-    st.markdown("## 💠 O Ecossistema Intelligence Flow")
-    st.markdown("Integração de dados massivos, matemática financeira e comportamento institucional.")
+    st.markdown("## 💠 Metodologia Integrada (Conceito & Visualização)")
+    st.markdown("Explore nossos pilares operacionais. Selecione uma aba para visualizar a tecnologia aplicada.")
     
     st.markdown("---")
-
-    # 1. MEMORIAL DE CÁLCULO
-    st.subheader("1. Memorial de Cálculo (Algoritmo de Paridade)")
-    st.markdown("Nossa vantagem competitiva reside na identificação matemática de distorções de preço.")
     
-    col_math, col_desc = st.columns([1, 1])
+    # ABAS INTERATIVAS
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 SMC & Liquidez", "🕯️ Price Action Puro", "⚡ Market Making (DOM)", "📅 Macro Drivers"])
     
-    with col_math:
-        st.markdown("""
-        <div class="math-block">
-        <b>FÓRMULA MESTRA DE ARBITRAGEM (ADR):</b><br><br>
-        $$ P_{Fair} = (P_{ADR} \\times FX_{Fut}) + Spread_{Risco} $$
-        <br><br>
-        <b>CÁLCULO DO GAP (%):</b><br><br>
-        $$ Gap_{\\%} = \\left( \\frac{P_{B3} - P_{Fair}}{P_{B3}} \\right) \\times 100 $$
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col_desc:
-        st.markdown("""
-        <div class="tech-card">
-            <b>Legenda das Variáveis:</b><br>
-            <ul>
-                <li><b>P(ADR):</b> Preço da ação em Nova York (ex: PBR).</li>
-                <li><b>FX(Fut):</b> Dólar Futuro ajustado pelos Juros (Cupom Cambial).</li>
-                <li><b>Spread(Risco):</b> Custo de oportunidade e Risco Brasil (CDS).</li>
-            </ul>
-            <br>
-            Se o Gap for maior que <b>0.5%</b> (descontadas as taxas), o robô executa a arbitragem.
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # 2. CONCEITOS INTEGRADOS
-    st.subheader("2. Metodologia Integrada")
-    
-    # Abas para organizar muito conteúdo
-    tab1, tab2, tab3, tab4 = st.tabs(["SMC & HME", "Price Action", "Market Makers", "Opções & Macro"])
-    
+    # 1. SMC (SMART MONEY CONCEPTS)
     with tab1:
-        st.markdown("#### Hipótese dos Mercados Eficientes (HME) vs Realidade")
-        st.info("A HME afirma que é impossível bater o mercado pois ele é eficiente. Nós provamos que o mercado é eficiente no LONGO prazo, mas ineficiente no CURTO prazo (M5/H1).")
-        st.markdown("#### Smart Money Concepts (SMC)")
-        st.write("Não operamos linhas de tendência. Operamos onde o dinheiro institucional está 'preso'. Caçamos zonas de Stop Hunt e Order Blocks.")
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            st.info("💡 **Conceito:** O gráfico não mostra linhas, mostra onde o dinheiro institucional 'descansa'. Order Blocks e FVG são ímãs de preço.")
+        with c2:
+            st.caption("Visualização: Gráfico Avançado com Indicadores de Volume")
+            # Widget Gráfico Avançado (Simulando SMC com Candles)
+            components.html("""
+            <div class="tradingview-widget-container">
+              <div id="tradingview_smc"></div>
+              <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+              <script type="text/javascript">
+              new TradingView.widget(
+              {
+              "width": "100%",
+              "height": 400,
+              "symbol": "BMFBOVESPA:PETR4",
+              "interval": "5",
+              "timezone": "America/Sao_Paulo",
+              "theme": "dark",
+              "style": "1",
+              "locale": "br",
+              "toolbar_bg": "#f1f3f6",
+              "enable_publishing": false,
+              "hide_side_toolbar": false,
+              "allow_symbol_change": true,
+              "studies": ["Volume@tv-basicstudies"],
+              "container_id": "tradingview_smc"
+              }
+              );
+              </script>
+            </div>
+            """, height=400)
 
+    # 2. PRICE ACTION
     with tab2:
-        st.markdown("#### Price Action Institucional")
-        st.write("A leitura pura do candle, ignorando indicadores atrasados (RSI, MACD). O foco é Volume e Spread do Candle (VSA - Volume Spread Analysis).")
+        st.caption("Visualização: Ação do Preço Pura (Candlestick Analysis)")
+        components.html("""
+        <div class="tradingview-widget-container">
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+          {
+          "symbols": [
+            ["IBOV", "BMFBOVESPA:IBOV|1D"],
+            ["Dólar", "FX_IDC:USDBRL|1D"],
+            ["S&P 500", "FOREXCOM:SPXUSD|1D"]
+          ],
+          "chartOnly": false,
+          "width": "100%",
+          "height": 400,
+          "locale": "br",
+          "colorTheme": "dark",
+          "autosize": false,
+          "showVolume": false,
+          "hideDateRanges": false,
+          "scalePosition": "right",
+          "scaleMode": "Normal",
+          "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+          "fontSize": "10",
+          "noTimeScale": false,
+          "valuesTracking": "1",
+          "changeMode": "price-and-percent",
+          "chartType": "candlestick"
+          }
+          </script>
+        </div>
+        """, height=400)
 
+    # 3. MARKET MAKING & DOM
     with tab3:
-        st.markdown("#### A Lógica do Market Maker")
-        st.write("O Market Maker precisa de liquidez. Para vender 1 milhão de lotes, ele precisa que 1 milhão de varejistas queiram comprar. Por isso ele 'puxa' o preço para induzir euforia antes de desovar sua posição (Distribuição).")
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            st.info("💡 **Conceito:** O Market Maker provê liquidez. O DOM (Depth of Market) mostra as intenções de compra e venda antes da execução.")
+        with c2:
+            st.caption("Visualização: Simulação de Fluxo/Forex Cross Rates")
+            components.html("""
+            <div class="tradingview-widget-container">
+              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-forex-cross-rates.js" async>
+              {
+              "width": "100%",
+              "height": 400,
+              "currencies": [
+                "EUR",
+                "USD",
+                "JPY",
+                "GBP",
+                "CHF",
+                "AUD",
+                "CAD",
+                "BRL"
+              ],
+              "isTransparent": true,
+              "colorTheme": "dark",
+              "locale": "br"
+              }
+              </script>
+            </div>
+            """, height=400)
 
+    # 4. MACRO DRIVERS
     with tab4:
-        st.markdown("#### Opções (Greeks)")
-        st.write("O mercado de derivativos é a cauda que balança o cachorro. O posicionamento em Gamma dos Dealers dita a volatilidade do ativo à vista.")
-        st.markdown("#### Macroeconomia")
-        st.write("Monitoramos Payroll, CPI, Fomc e Copom. O dinheiro respeita a taxa de juros.")
+        st.caption("Visualização: Calendário Econômico (Drivers de Volatilidade)")
+        components.html("""
+        <div class="tradingview-widget-container">
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+          {
+          "colorTheme": "dark",
+          "isTransparent": true,
+          "width": "100%",
+          "height": "400",
+          "locale": "br",
+          "importanceFilter": "0,1",
+          "currencyFilter": "USD,BRL,EUR"
+          }
+          </script>
+        </div>
+        """, height=400)
