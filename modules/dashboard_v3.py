@@ -1,151 +1,173 @@
 import streamlit as st
+import yfinance as yf
 import pandas as pd
 
-# --- ESTILIZAÇÃO CSS AVANÇADA (DARK MODE PREMIUM) ---
-def apply_styles():
+# --- CSS DE ALTO NÍVEL (Dark Mode + Glassmorphism) ---
+def apply_premium_styles():
     st.markdown("""
     <style>
-        /* Fundo Geral */
-        .stApp { background-color: #050505; }
-        
-        /* Tipografia */
-        h1, h2, h3 { color: #ffffff; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; }
-        p { color: #b0b3b8; font-size: 16px; line-height: 1.6; }
-        
-        /* Container Hero */
-        .hero-box {
-            background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 100%);
-            padding: 60px 40px;
-            border-radius: 0px 0px 20px 20px;
-            margin-bottom: 40px;
-            text-align: center;
-            border-bottom: 4px solid #3b82f6;
+        /* Imagem de Fundo (Abstrato Tech) */
+        .stApp {
+            background-image: url("https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80&w=2600&auto=format&fit=crop");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
         }
-        .hero-title { font-size: 48px; font-weight: 700; color: #fff; letter-spacing: -1px; margin-bottom: 10px; }
-        .hero-sub { font-size: 20px; color: #93c5fd; max-width: 800px; margin: 0 auto; }
+        
+        /* Máscara escura para ler o texto */
+        .stApp::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: -1;
+        }
 
-        /* Cards de Conceito */
-        .feature-card {
-            background-color: #111; 
-            padding: 30px; 
-            border-radius: 15px; 
-            border: 1px solid #333;
-            height: 100%;
-            transition: all 0.3s ease;
+        /* Tipografia */
+        h1, h2, h3 { color: #fff !important; font-family: 'Helvetica Neue', sans-serif; }
+        p, li { color: #cbd5e1 !important; font-size: 1.1rem; line-height: 1.6; }
+
+        /* Container de Vidro (Glassmorphism) */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
         }
-        .feature-card:hover { border-color: #3b82f6; transform: translateY(-5px); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1); }
-        .card-icon { font-size: 40px; margin-bottom: 15px; }
-        .card-title { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 10px; }
-        .card-text { font-size: 14px; color: #888; }
-        
-        /* Destaques (Arbitragem) */
-        .highlight-box {
-            background-color: #1e293b;
-            border-left: 5px solid #10b981;
-            padding: 20px;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
+        .glass-card:hover { transform: translateY(-5px); border-color: #3b82f6; }
+
+        /* Destaques de Texto */
+        .highlight { color: #60a5fa; font-weight: bold; }
+        .success { color: #34d399; font-weight: bold; }
+        .danger { color: #f87171; font-weight: bold; }
+
+        /* Métricas */
+        div[data-testid="stMetricValue"] { color: #fff !important; font-size: 1.8rem !important; }
+        div[data-testid="stMetricLabel"] { color: #94a3b8 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# AQUI ESTÁ A FUNÇÃO QUE O SEU ERRO DIZ QUE FALTA:
+@st.cache_data(ttl=300)
+def get_simple_data():
+    # Busca rápida de dados para o ticker
+    tickers = {'S&P500': '^GSPC', 'Dólar (DXY)': 'DX-Y.NYB', 'Petróleo': 'BZ=F', 'Vale (NY)': 'VALE'}
+    data = yf.download(list(tickers.values()), period="2d", progress=False)['Close']
+    
+    # Tratamento seguro de MultiIndex
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.droplevel(1)
+        
+    results = {}
+    for name, ticker in tickers.items():
+        if ticker in data.columns:
+            try:
+                # Pega o último valor válido
+                val = data[ticker].dropna().iloc[-1]
+                prev = data[ticker].dropna().iloc[-2]
+                delta = ((val - prev)/prev)*100
+                results[name] = (val, delta)
+            except:
+                results[name] = (0.0, 0.0)
+        else:
+            results[name] = (0.0, 0.0)
+    return results
+
 def show_landing_page():
-    apply_styles()
+    apply_premium_styles()
     
-    # 1. HERO SECTION (Impacto Visual)
+    # 1. HERO SECTION (Impacto)
     st.markdown("""
-    <div class="hero-box">
-        <div class="hero-title">INTELLIGENCE FLOW</div>
-        <div class="hero-sub">Plataforma Institucional de Monitoramento Macroquantitativo & Arbitragem de Alta Frequência</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 2. CONCEITOS MACRO (Imagens e Explicação)
-    st.markdown("## 🌐 A Dinâmica dos Mercados Globais")
-    st.markdown("O mercado financeiro não é aleatório. Ele segue fluxos de capital ditados por juros, risco e correlações.")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="card-icon">🇺🇸 vs 🇧🇷</div>
-            <div class="card-title">B3 vs. NYSE: Quem manda?</div>
-            <p class="card-text">
-                O Brasil é um mercado emergente. O volume financeiro da nossa bolsa (B3) é uma fração do mercado americano (NYSE).
-                <br><br>
-                <b>A Tese:</b> O fluxo estrangeiro dita a tendência do IBOV. Monitoramos o <b>EWZ</b> (ETF do Brasil em Nova York) 
-                para antecipar movimentos locais. Se o gringo vende lá fora, o preço cai aqui minutos depois.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col2:
-        # Imagem ilustrativa de mercado
-        st.image("https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1000&auto=format&fit=crop", 
-                 use_container_width=True)
-
-    st.markdown("---")
-
-    # 3. ARBITRAGEM E GAPS (A parte técnica explicada)
-    st.markdown("## ⚡ O Conceito de Arbitragem e GAP")
-    
-    c1, c2, c3 = st.columns([1, 1, 1])
-    
-    with c1:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="card-title">1. Ativos Espelhados</div>
-            <p class="card-text">
-                Empresas como Petrobras e Vale são negociadas em Reais (R$) no Brasil e em Dólares (US$) nos EUA (ADRs).
-                Matematicamente, elas representam a mesma empresa.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with c2:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="card-title">2. A Paridade</div>
-            <p class="card-text">
-                O preço deve ser igual. A fórmula básica é:<br>
-                <code>Preço BR = Preço NY * Dólar</code><br>
-                Se o Dólar sobe, a ação no Brasil deveria subir para compensar.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with c3:
-        st.markdown("""
-        <div class="feature-card" style="border-color: #10b981;">
-            <div class="card-title">3. O GAP de Lucro</div>
-            <p class="card-text">
-                Quando essa conta não fecha, surge um <b>GAP de Arbitragem</b>. Robôs HFT compram onde está barato e vendem onde está caro.
-                Nossa plataforma identifica esses momentos em tempo real.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    # Exemplo Visual
-    st.markdown("""
-    <div class="highlight-box">
-        <h3 style="margin:0; font-size:18px; color:#fff;">📐 Exemplo Prático de Correlação:</h3>
-        <p style="margin-top:10px; color:#cbd5e1;">
-        Se o <b>Minério de Ferro</b> cai na China e o <b>Dólar</b> cai no mundo (DXY), é matematicamente provável que a <b>VALE3</b> sofra pressão vendedora, 
-        independentemente do gráfico técnico. Operamos fluxo e fundamento, não apenas preço.
+    <div style="text-align: center; padding: 60px 0;">
+        <h1 style="font-size: 3.5rem; font-weight: 800; background: -webkit-linear-gradient(45deg, #3b82f6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            INTELLIGENCE FLOW
+        </h1>
+        <p style="font-size: 1.5rem; color: #e2e8f0; max-width: 800px; margin: 0 auto;">
+            Monitoramento Institucional de Fluxo, Arbitragem e Assimetria de Mercado.
         </p>
     </div>
     """, unsafe_allow_html=True)
 
+    # 2. TICKER TAPE (Dados)
+    vals = get_simple_data()
+    c1, c2, c3, c4 = st.columns(4)
+    cols = [c1, c2, c3, c4]
+    keys = list(vals.keys())
+    
+    for i, col in enumerate(cols):
+        name = keys[i]
+        val, delta = vals[name]
+        with col:
+            st.markdown(f"""
+            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; text-align:center; border:1px solid #333;">
+                <div style="font-size:0.9rem; color:#aaa;">{name}</div>
+                <div style="font-size:1.4rem; color:#fff; font-weight:bold;">{val:.2f}</div>
+                <div style="font-size:0.9rem; color:{'#4ade80' if delta > 0 else '#f87171'};">{delta:+.2f}%</div>
+            </div>
+            """, unsafe_allow_html=True)
+
     st.markdown("---")
 
-    # 4. RODAPÉ DE AUTORIDADE
-    st.markdown("## 🚀 Por que Intelligence Flow?")
-    cols = st.columns(4)
-    cols[0].metric("Latência", "Low Latency", "10ms")
-    cols[1].metric("Dados", "NYSE & B3", "Real-Time")
-    cols[2].metric("Modelos", "Quantitativos", "Proprietários")
-    cols[3].metric("Foco", "Institucional", "Day Trade")
+    # 3. CONTEÚDO EDUCACIONAL (LAYOUT DE CARDS)
     
-    st.markdown("<br><br><div style='text-align:center; color:#555;'>Intelligence Flow Solutions © 2026 • Tecnologia para Alta Performance</div>", unsafe_allow_html=True)
+    # BLOCO 1: CORRELAÇÃO B3 vs NYSE
+    st.markdown("## 🌐 B3 vs. NYSE: A Dinâmica do Fluxo")
+    st.markdown("""
+    <div class="glass-card">
+        <h3>Quem move o preço?</h3>
+        <p>
+            O Brasil é um passageiro no trem global. O motorista é Nova York (NYSE).<br>
+            Nossa plataforma monitora o <span class="highlight">EWZ (ETF do Brasil nos EUA)</span>. 
+            Muitas vezes, os movimentos começam lá fora 10 a 15 minutos antes de impactar o IBOVESPA aqui.
+            <br><br>
+            <ul>
+                <li><span class="success">Correlação Positiva (+):</span> Se S&P500 e Commodities sobem, Brasil tende a subir.</li>
+                <li><span class="danger">Correlação Negativa (-):</span> Se Dólar (DXY) e Juros Americanos sobem, Brasil tende a cair (fuga de capital).</li>
+            </ul>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # BLOCO 2: ARBITRAGEM E GAP
+    st.markdown("## ⚡ Arbitragem & Gaps de Preço")
+    c_left, c_right = st.columns(2)
+    
+    with c_left:
+        st.markdown("""
+        <div class="glass-card" style="height: 100%;">
+            <h3>O que é Arbitragem?</h3>
+            <p>
+                Ativos como <b>Petrobras (PETR4)</b> e <b>Vale (VALE3)</b> são negociados em dois lugares ao mesmo tempo: São Paulo e Nova York.
+                <br><br>
+                Matematicamente, o preço deve ser idêntico (convertido pelo Dólar).
+                Quando há diferença, robôs de alta frequência (HFT) compram onde está barato e vendem onde está caro.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c_right:
+        st.markdown("""
+        <div class="glass-card" style="height: 100%;">
+            <h3>O Gap de Lucro</h3>
+            <p>
+                Chamamos de <span class="highlight">GAP DE ARBITRAGEM</span> a diferença momentânea entre o preço teórico e o preço real.
+                <br><br>
+                <b>Exemplo:</b> Se a Petrobras sobe 2% em NY e o Dólar está estável, a PETR4 no Brasil tem a "obrigação" matemática de subir 2%.
+                Se ela subiu apenas 0.5%, existe um <b>Gap de 1.5%</b> para capturar.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 4. CTA (CHAMADA PARA AÇÃO)
+    st.markdown("""
+    <div style="text-align: center; margin-top: 50px; padding: 40px;">
+        <h2>Pronto para operar com dados institucionais?</h2>
+        <p>Acesse a Mesa de Operações para visualizar os Gaps em tempo real.</p>
+        <br>
+        <div style="color: #64748b; font-size: 0.9rem;">Intelligence Flow Solutions © 2026</div>
+    </div>
+    """, unsafe_allow_html=True)
