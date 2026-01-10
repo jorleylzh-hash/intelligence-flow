@@ -25,7 +25,8 @@ def get_arbitrage_data():
         tickers.append(pair[1]) # NYSE
         
     # Download em lote (Mais rápido)
-    data = yf.download(tickers, period="1d", interval="5m", progress=False)['Close']
+    # TEM QUE TER O threads=False
+    data = yf.download(tickers, period="1d", interval="5m", progress=False, threads=False)['Close']
     
     # Tratamento de MultiIndex (yfinance novo)
     if isinstance(data.columns, pd.MultiIndex):
