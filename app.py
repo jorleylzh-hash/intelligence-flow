@@ -1,22 +1,27 @@
 import streamlit as st
 import modules.dashboard_v3 as dashboard_v3
+import modules.pitch_page as pitch_page  # <--- IMPORTAR O NOVO MÓDULO
 import modules.auth_engine as auth_engine
 
-# 1. Configuração Inicial
-st.set_page_config(page_title="Intelligence Flow", page_icon="💠", layout="wide", initial_sidebar_state="collapsed")
+# ... (Configurações iniciais mantidas) ...
 
-if 'authentication_status' not in st.session_state:
-    st.session_state['authentication_status'] = None
+# --- NAVEGAÇÃO ---
+st.sidebar.markdown("### Menu Principal")
 
-# 2. Navegação
-st.sidebar.title("Navegação")
-page = st.sidebar.radio("Ir para:", ["🏠 Institucional", "📈 Área do Trader"])
+# Adicionei a opção "💎 Por que Intelligence Flow?"
+selection = st.sidebar.radio(
+    "Ir para:", 
+    ["🏠 Página Inicial", "💎 Por que Intelligence Flow?", "📈 Área do Trader"]
+)
 
-if page == "🏠 Institucional":
-    # Carrega a página NOVA com gráficos 60fps
+if selection == "🏠 Página Inicial":
     dashboard_v3.show_landing_page()
 
-elif page == "📈 Área do Trader":
+elif selection == "💎 Por que Intelligence Flow?":
+    # Chama a nova página de vendas
+    pitch_page.show_pitch()
+
+elif selection == "📈 Área do Trader":
     if hasattr(auth_engine, 'get_authenticator'):
         authenticator = auth_engine.get_authenticator()
         
@@ -44,3 +49,4 @@ elif page == "📈 Área do Trader":
             st.info('Por favor, faça login para acessar.')
     else:
         st.error("Erro no módulo de autenticação.")
+
