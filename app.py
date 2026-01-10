@@ -1,53 +1,56 @@
 import streamlit as st
 import modules.dashboard_v3 as dashboard_v3
 import modules.auth_engine as auth_engine
-import time
 
-# 1. Configuração da Página
+# 1. CONFIGURAÇÃO (OBRIGATÓRIO SER A PRIMEIRA LINHA)
 st.set_page_config(
-    page_title="Intelligence Flow | Institutional",
+    page_title="Intelligence Flow",
     page_icon="🌪️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# 2. Inicializar Estado
+# 2. INICIALIZAÇÃO DE ESTADO
 if 'authentication_status' not in st.session_state:
     st.session_state['authentication_status'] = None
 
-# 3. Menu Lateral
-st.sidebar.title("Navegação")
-selection = st.sidebar.radio("Ir para:", ["🏠 Página Institucional", "🔐 Área de Membros"])
+# 3. LÓGICA DE NAVEGAÇÃO
+# O usuário escolhe no menu se quer ver o site ou entrar na mesa
+st.sidebar.markdown("### Navegação")
+page = st.sidebar.radio("Ir para:", ["🏠 Institucional", "🔐 Mesa de Operações"])
 
-# 4. Roteamento Inteligente (AQUI ESTÁ A CORREÇÃO)
-if selection == "🏠 Página Institucional":
-    # Verifica qual função existe no arquivo para evitar o erro
-    if hasattr(dashboard_v3, 'show_landing_page'):
-        dashboard_v3.show_landing_page()
-    elif hasattr(dashboard_v3, 'show_dashboard'):
-        dashboard_v3.show_dashboard()
-    else:
-        st.error("Erro crítico: Nenhuma função de visualização encontrada no módulo dashboard_v3.")
+if page == "🏠 Institucional":
+    # Carrega a Landing Page Fantástica (Pública)
+    dashboard_v3.show_landing_page()
 
-elif selection == "🔐 Área de Membros":
-    # Verifica se o motor de autenticação existe
+elif page == "🔐 Mesa de Operações":
+    # Lógica de Login (Área Privada)
     if hasattr(auth_engine, 'get_authenticator'):
         authenticator = auth_engine.get_authenticator()
         
+        # --- CORREÇÃO DO ERRO DE LOGIN AQUI ---
+        # Usando location='main' para compatibilidade com nova versão
+        name, authentication_status, username = authenticator.login(location='main')
+        
         if st.session_state["authentication_status"]:
-            st.sidebar.success(f"Logado como: {st.session_state['name']}")
+            # --- USUÁRIO LOGADO COM SUCESSO ---
             authenticator.logout('Sair', 'sidebar')
-            st.title("🖥️ Mesa de Operações (Restrito)")
-            st.success("Acesso Autorizado.")
-            st.info("Painel de Trading carregado com sucesso.")
-        else:
-            st.markdown("## 🔐 Acesso à Mesa de Operações")
-            st.write("Área exclusiva para assinantes.")
-            name, authentication_status, username = authenticator.login('Login', 'main')
             
-            if authentication_status == False:
-                st.error('Usuário ou senha incorretos.')
-            elif authentication_status == None:
-                st.warning('Insira suas credenciais.')
+            st.title(f"Mesa de Operações | Bem-vindo, {name}")
+            st.markdown("---")
+            st.success("✅ Conexão com NYSE e B3 estabelecida.")
+            
+            # Placeholder para os gráficos reais de trading
+            st.info("Aqui seriam carregados os gráficos de VWAP, Bandas e Fluxo em Tempo Real.")
+            
+            col1, col2 = st.columns(2)
+            col1.metric("Saldo Simulado", "R$ 100.000,00", "+2.5%")
+            col2.metric("Risco Diário", "Baixo", "Ok")
+            
+        elif st.session_state["authentication_status"] == False:
+            st.error('Usuário ou senha incorretos.')
+        elif st.session_state["authentication_status"] == None:
+            st.warning('Por favor, faça login para acessar os dados sensíveis.')
+            
     else:
-        st.error("Erro: O módulo 'auth_engine' não foi carregado corretamente.")
+        st.error("Erro crítico: Motor de autenticação não encontrado.")
