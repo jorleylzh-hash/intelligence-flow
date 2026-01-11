@@ -1,109 +1,134 @@
 import google.generativeai as genai
 import os
-import pandas as pd
+import requests
+import json
 
-# --- 1. CONFIGURAÇÃO E DADOS ---
-
+# --- 1. CONFIGURAÇÃO ---
 def configure_genai():
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key: return False
     genai.configure(api_key=api_key)
     return True
 
+# --- 2. DADOS DE MERCADO (Comando: assets value) ---
 def get_market_overview():
-    """
-    Simula (ou busca via API) um panorama completo de Renda Fixa e Variável.
-    Isso alimenta o comando 'assets value'.
-    """
-    # Em produção, substitua por chamadas à API da Brapi/HG Brasil
+    """ Busca dados reais para o comando 'assets value' """
+    # Tentativa de pegar dados reais da Brapi (Gratuito)
+    url = "https://brapi.dev/api/quote/PETR4,VALE3,BTC-USD,USDBRL"
+    
     dados = {
-        "Renda Fixa (Taxas Ref.)": {
-            "Selic Meta": "11.25% a.a.",
+        "Renda Fixa (Referência)": {
+            "Selic Meta": "11.25% a.a. (Copom)",
             "CDI": "11.15% a.a.",
-            "Tesouro IPCA+ 2029": "IPCA + 6.10%",
-            "Tesouro Selic 2027": "Selic + 0.04%",
-            "CDB Banco Master (Ref)": "120% do CDI"
-        },
-        "Renda Variável (Destaques B3)": {
-            "IBOV": "128.500 pts",
-            "PETR4": "R$ 38,45",
-            "VALE3": "R$ 62,10",
-            "WING26": "130.100 pts",
-            "IFIX (FIIs)": "3.350 pts"
-        },
-        "Moedas e Global": {
-            "Dólar (WDO)": "R$ 5.85",
-            "S&P 500": "5.230 pts",
-            "Bitcoin": "US$ 68,000"
+            "Tesouro IPCA+": "IPCA + 6.XX%"
         }
     }
+    try:
+        resp = requests.get(url, timeout=2)
+        if resp.status_code == 200:
+            res = {i['symbol']: i['regularMarketPrice'] for i in resp.json()['results']}
+            dados["Renda Variável"] = {"PETR4": res.get('PETR4'), "VALE3": res.get('VALE3')}
+            dados["Moedas/Cripto"] = {"Dólar": res.get('USDBRL'), "Bitcoin": res.get('BTC-USD')}
+        else:
+            dados["Status"] = "Dados offline (Delay B3)"
+    except:
+        dados["Status"] = "Erro de Conexão API"
+        
     return str(dados)
 
-# --- 2. A PERSONA (SYSTEM PROMPT) ---
+# --- 3. CONTEÚDO EDUCACIONAL (NOVO: Comando 'educational map') ---
+def get_educational_syllabus():
+    """ Retorna a ementa estruturada (Estilo CPA-20 / ANCORD) """
+    ementa = {
+        "1. Sistema Financeiro Nacional (SFN)": [
+            "CMN (Conselho Monetário Nacional): O órgão normativo máximo.",
+            "Bacen (Banco Central): Executor da política monetária e cambial.",
+            "CVM (Comissão de Valores Mobiliários): Fiscalizador do mercado de capitais."
+        ],
+        "2. Infraestrutura de Mercado": [
+            "B3 (Brasil, Bolsa, Balcão): Histórico e Fusão (Bovespa + BM&F + Cetip).",
+            "Clearing House: Câmaras de compensação e liquidação.",
+            "Full and Fair Disclosure: O princípio da transparência total."
+        ],
+        "3. Instrumentos Financeiros": [
+            "Renda Variável: Ações, FIIs, ETFs e BDRs.",
+            "Derivativos: Futuros (Dólar/Índice), Opções e Swaps.",
+            "Renda Fixa: Títulos Públicos (Tesouro) e Privados (CDB, LCI, LCA)."
+        ],
+        "4. Economia e Indicadores": [
+            "IPCA e IGPM (Inflação).",
+            "PIB (Atividade Econômica).",
+            "Taxa de Câmbio e Reservas Internacionais."
+        ]
+    }
+    return str(ementa)
 
+# --- 4. A PERSONA (SYSTEM PROMPT) ---
 SYSTEM_INSTRUCTION = """
-CONTEXTO:
-Você é o 'Agente Intelligence Flow', um analista de mercado financeiro institucional sênior.
-Sua missão é fornecer dados baseados no princípio 'Full and Fair Disclosure'.
+IDENTIDADE:
+Você é o 'Agente Intelligence Flow', uma IA especialista em Mercado Financeiro.
+Você NÃO é um Analista CNPI, portanto, NÃO faz recomendações de compra/venda.
 
-REGRAS DE CONDUTA (RESTRIÇÕES):
-1. ASSUNTO RESTRITO: Você SÓ responde sobre Mercado Financeiro, Economia, Trading, Ativos (B3, NYSE, Cripto) e Análise Técnica/Fundamentalista.
-2. RECUSA: Se o usuário perguntar sobre política partidária, receitas culinárias, relacionamentos, códigos de programação (fora de trading) ou qualquer tema não-financeiro, responda APENAS: "Como Agente Intelligence Flow, minha diretriz limita-se estritamente à análise de mercado financeiro."
-3. TOM DE VOZ: Profissional, direto, técnico e imparcial. Sem gírias.
-4. COMANDOS: Se o usuário digitar "assets value", forneça o resumo completo de Renda Fixa e Variável.
+FUNÇÕES:
+1. LEITURA DE MERCADO: Interpretar dados técnicos e fundamentalistas.
+2. TUTOR EDUCACIONAL: Explicar conceitos complexos (CVM, B3, Derivativos) de forma didática.
+
+REGRAS DE CONDUTA:
+1. NUNCA dê "Calls" (Indicação de investimento).
+2. Se o usuário pedir "educational map", apresente a Ementa de Estudos.
+3. Se o usuário pedir "assets value", apresente as cotações.
+4. Assuntos fora de finanças devem ser recusados cordialmente.
 """
 
-# --- 3. FUNÇÕES DE CONSULTA ---
-
+# --- 5. FUNÇÃO PRINCIPAL DE CONSULTA ---
 def consultar_gemini(user_input, contexto_adicional=""):
-    """
-    Função principal que processa a entrada do usuário.
-    """
     if not configure_genai(): return "⚠️ Erro: Chave API ausente."
+    
+    user_input_clean = user_input.strip().lower()
 
-    # --- LÓGICA DO COMANDO ESPECÍFICO ---
-    # Se o usuário digitar o comando exato (case insensitive)
-    if user_input.strip().lower() == "assets value":
-        dados_mercado = get_market_overview()
-        prompt_especifico = f"""
-        O usuário solicitou o comando 'assets value'.
-        Abaixo estão os dados brutos atuais do mercado:
-        {dados_mercado}
+    # --- COMANDO 1: COTAÇÕES ---
+    if user_input_clean == "assets value":
+        dados = get_market_overview()
+        prompt_final = f"""
+        {SYSTEM_INSTRUCTION}
+        O usuário executou o comando 'assets value'.
+        Dados brutos: {dados}
+        TAREFA: Gere uma tabela Markdown com estes valores. Adicione um breve comentário sobre a volatilidade atual.
+        """
+        
+    # --- COMANDO 2: CONTEÚDO EDUCACIONAL (NOVO) ---
+    elif user_input_clean == "educational map" or user_input_clean == "topicos":
+        syllabus = get_educational_syllabus()
+        prompt_final = f"""
+        {SYSTEM_INSTRUCTION}
+        O usuário executou o comando 'educational map'.
+        
+        EMENTA DO CURSO:
+        {syllabus}
         
         TAREFA:
-        Formate esses dados em uma tabela Markdown profissional e limpa.
-        Separe claramente 'Renda Fixa' de 'Renda Variável'.
-        Adicione um breve comentário de 1 linha sobre o sentimento geral.
+        1. Apresente esta ementa em formato de Lista Estruturada (Markdown).
+        2. Convide o usuário a escolher um tópico para aprender mais (Ex: "Digite 'História da B3' para saber mais").
+        3. Use emojis para separar os módulos.
         """
-        user_input = prompt_especifico # Substitui o input pela instrução de formatação
     
-    # --- FLUXO NORMAL DA IA ---
-    try:
-        # Usamos o modelo mais inteligente disponível (2.5 Pro)
-        model = genai.GenerativeModel('gemini-2.5-pro')
-        
-        # Montamos o Prompt Final com a Persona + Contexto + Pergunta
-        full_prompt = f"""
+    # --- FLUXO LIVRE (PERGUNTAS GERAIS) ---
+    else:
+        prompt_final = f"""
         {SYSTEM_INSTRUCTION}
-        
-        CONTEXTO TÉCNICO ADICIONAL (Se houver):
-        {contexto_adicional}
-        
-        PERGUNTA/COMANDO DO USUÁRIO:
-        {user_input}
+        PERGUNTA DO USUÁRIO: "{user_input}"
         """
-        
-        response = model.generate_content(full_prompt)
-        return response.text
 
+    try:
+        model = genai.GenerativeModel('gemini-2.5-pro')
+        return model.generate_content(prompt_final).text
     except Exception as e:
         return f"Erro no Agente: {str(e)}"
 
-# Mantemos a função de Roadmap para compatibilidade
+# Mantido para compatibilidade com o módulo Solutions
 def gerar_roadmap_solucoes(problema):
     if not configure_genai(): return "Erro API"
     try:
         model = genai.GenerativeModel('gemini-2.5-pro')
-        prompt = f"{SYSTEM_INSTRUCTION}\n\nGere um Roadmap para o desafio: {problema}"
-        return model.generate_content(prompt).text
-    except Exception as e: return str(e)
+        return model.generate_content(f"{SYSTEM_INSTRUCTION}\nRoadmap para: {problema}").text
+    except: return "Erro"
