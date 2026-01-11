@@ -8,12 +8,14 @@ def configure_genai():
     genai.configure(api_key=api_key)
     return True
 
-def consultar_gemini_trader(dados_mercado, spread_arbitragem):
-    """ IA focada no Trading Desk (Respostas curtas) """
+def consultar_gemini(dados_mercado, spread_arbitragem):
+    """ 
+    IA para o TRADING DESK 
+    Nome da função mantido para compatibilidade com trading_desk.py
+    """
     if not configure_genai(): return "⚠️ Erro: Chave API ausente."
 
     try:
-        # Modelo atualizado e rápido
         model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = f"""
@@ -32,39 +34,32 @@ def consultar_gemini_trader(dados_mercado, spread_arbitragem):
         return f"Erro IA: {str(e)}"
 
 def gerar_roadmap_solucoes(problema_usuario):
-    """ NOVA FUNÇÃO: Gera o Mapa de Soluções Estratégicas """
+    """ 
+    IA para a área de SOLUÇÕES 
+    Gera o Markdown estruturado.
+    """
     if not configure_genai(): return "⚠️ Erro: Chave API ausente."
 
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # Prompt desenhado para criar o "Formato de Mapa"
         prompt = f"""
         Você é o Arquiteto de Soluções da Intelligence Flow.
-        O usuário tem o seguinte desafio: "{problema_usuario}"
+        Desafio: "{problema_usuario}"
         
-        Gere um MAPA ESTRATÉGICO DE SOLUÇÃO.
-        Não use texto corrido. Use estritamente a estrutura visual abaixo (Markdown):
-
+        Gere um MAPA ESTRATÉGICO (Markdown).
+        Estrutura Obrigatória:
         ### 🎯 Objetivo Central
-        [Definição clara do objetivo]
-
+        [Texto]
         ### 🗺️ Fases de Implementação
-        
-        #### Fase 1: Diagnóstico & Base 🏗️
-        * [Ação Chave 1]
-        * [Ação Chave 2]
-        
-        #### Fase 2: Execução & Otimização 🚀
-        * [Ação Chave 1]
-        * [Tecnologia Sugerida]
-        
-        #### Fase 3: Escala & Resultados 💎
-        * [Métrica de Sucesso]
-        * [Impacto Esperado]
-
+        #### Fase 1: Diagnóstico 🏗️
+        * [Ação]
+        #### Fase 2: Execução 🚀
+        * [Ação]
+        #### Fase 3: Resultados 💎
+        * [Métrica]
         ---
-        **💡 Insight Intelligence Flow:** [Uma frase de alto impacto sobre a solução]
+        **💡 Insight IF:** [Frase final]
         """
         
         response = model.generate_content(prompt)
