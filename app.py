@@ -3,19 +3,19 @@ import time
 import random
 from datetime import datetime
 
-# IMPORTS DOS MÓDULOS
+# IMPORTS DOS MÓDULOS (Mantendo sua estrutura original)
 import modules.landing_page as landing_page
 import modules.ecosystem as ecosystem
 import modules.solutions as solutions
 import modules.ui_styles as ui_styles
-import modules.trading_desk as trading_desk
-import modules.notifications as notifications # Novo módulo de disparo
+import modules.notifications as notifications # Seu módulo de disparo de e-mail
+import modules.trading_desk as trading_desk   # O módulo que atualizamos com IA
 
 # --- CONFIGURAÇÃO INICIAL ---
 st.set_page_config(page_title="Intelligence Flow", page_icon="💠", layout="wide")
 ui_styles.apply_design()
 
-# --- GESTÃO DE ESTADO (SESSION STATE) ---
+# --- GESTÃO DE ESTADO (SESSION STATE) - Mantido idêntico ao seu original ---
 if 'page' not in st.session_state: st.session_state.page = 'home'
 if 'auth_status' not in st.session_state: st.session_state.auth_status = False
 if 'otp_code' not in st.session_state: st.session_state.otp_code = None
@@ -48,8 +48,9 @@ elif st.session_state.page == 'solutions':
 
 elif st.session_state.page == 'trader':
     
-    # SE JÁ ESTIVER LOGADO
+    # --- FLUXO DE LOGIN (MANTIDO O SEU ORIGINAL) ---
     if st.session_state.auth_status:
+        # --- ÁREA LOGADA ---
         c_usr, c_out = st.columns([6, 1])
         with c_usr: 
             st.success(f"Terminal Ativo | Usuário: {st.session_state.otp_email}")
@@ -60,9 +61,17 @@ elif st.session_state.page == 'trader':
                 st.session_state.otp_code = None
                 st.rerun()
         
-        trading_desk.show_desk()
+        # *** AQUI ESTÁ A MUDANÇA ***
+        # Chamamos a função nova que criamos no modules/trading_desk.py
+        # Se você manteve o nome 'show_desk', use show_desk(). 
+        # Se usou o código novo que enviei antes (render_trading_desk), use a linha abaixo:
+        try:
+            trading_desk.render_trading_desk()
+        except AttributeError:
+            # Fallback caso você não tenha atualizado o nome da função no arquivo trading_desk.py
+            trading_desk.show_desk()
 
-    # SE NÃO ESTIVER LOGADO (PROCESSO OTP)
+    # --- FLUXO DE NÃO LOGADO (MANTIDO INTEGRALMENTE) ---
     else:
         st.markdown("<br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 1, 1])
@@ -81,16 +90,14 @@ elif st.session_state.page == 'trader':
                 
                 if st.button("ENVIAR CÓDIGO DE ACESSO", type="primary", use_container_width=True):
                     if "@" in email_input and "." in email_input:
-                        # Gera código de 4 dígitos
                         code = str(random.randint(1000, 9999))
                         
-                        # Atualiza Estado
                         st.session_state.otp_code = code
                         st.session_state.otp_email = email_input
                         st.session_state.last_otp_time = time.time()
                         
-                        # Envia E-mail
                         with st.spinner("Enviando token de segurança..."):
+                            # Chama seu módulo original de notificações
                             sent = notifications.send_otp_email(email_input, code)
                             
                         if sent:
@@ -99,7 +106,7 @@ elif st.session_state.page == 'trader':
                             time.sleep(1)
                             st.rerun()
                         else:
-                            st.error("Falha ao enviar e-mail. Verifique a API Key no módulo notifications.")
+                            st.error("Falha ao enviar e-mail. Verifique a configuração do Resend.")
                     else:
                         st.warning("Por favor, insira um e-mail válido.")
 
@@ -107,10 +114,8 @@ elif st.session_state.page == 'trader':
             elif st.session_state.login_step == 2:
                 st.info(f"Código enviado para: **{st.session_state.otp_email}**")
                 
-                # Input do Código
                 user_code = st.text_input("Informe o código de 4 dígitos", max_chars=4, placeholder="0000")
                 
-                # Botão Verificar
                 if st.button("ACESSAR TERMINAL", type="primary", use_container_width=True):
                     if user_code == st.session_state.otp_code:
                         st.session_state.auth_status = True
@@ -120,7 +125,7 @@ elif st.session_state.page == 'trader':
                     else:
                         st.error("Código incorreto.")
 
-                # Lógica de Reenvio (Timer 45s)
+                # Timer de reenvio
                 time_elapsed = time.time() - st.session_state.last_otp_time
                 time_remaining = 45 - int(time_elapsed)
                 
@@ -131,18 +136,15 @@ elif st.session_state.page == 'trader':
                     st.button(f"Reenviar Código ({time_remaining}s)", disabled=True, use_container_width=True)
                 else:
                     if st.button("REENVIAR CÓDIGO AGORA", use_container_width=True):
-                        # Gera novo código
                         new_code = str(random.randint(1000, 9999))
                         st.session_state.otp_code = new_code
                         st.session_state.last_otp_time = time.time()
                         
-                        # Reenvia
                         notifications.send_otp_email(st.session_state.otp_email, new_code)
                         st.success("Novo código enviado!")
                         time.sleep(1)
                         st.rerun()
                 
-                # Opção de trocar e-mail
                 if st.button("Voltar / Trocar E-mail", type="secondary", use_container_width=True):
                     st.session_state.login_step = 1
                     st.rerun()
