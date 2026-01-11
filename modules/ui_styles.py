@@ -17,20 +17,16 @@ def show_footer_cnpj():
     st.markdown("<div style='text-align:center; color:#64748b; font-size:0.8em;'>Intelligence Flow Ltda © 2026 | CNPJ: 58.264.493/0001-33</div>", unsafe_allow_html=True)
 
 def show_compliance_footer():
-    """
-    Rodapé formatado corretamente (sem mostrar tags HTML).
-    """
-    st.markdown("---")
-    # Usando st.info com ícone para ficar limpo, ou markdown HTML puro
-    st.markdown("""
-    <div style="background-color: #0f1115; color: #64748b; padding: 15px; font-size: 0.75rem; border-top: 1px solid #334155; text-align: justify; margin-top: 30px;">
-        <strong style="color: #94a3b8;">⚠️ DISCLAIMER REGULATÓRIO & RISCO DE MERCADO</strong><br><br>
-        
-        <strong>1. Natureza Tecnológica:</strong> O "Agente Intelligence Flow" é um sistema de Inteligência Artificial Generativa. Interpretações baseadas em estatística, não garantem rentabilidade.<br>
-        <strong>2. Não é Recomendação (CVM 20):</strong> Material estritamente educativo (Full and Fair Disclosure). Não constitui oferta ou Call de compra/venda.<br>
-        <strong>3. Riscos:</strong> Day Trade envolve alto risco e possibilidade de perda total do capital.<br>
-        <strong>4. Isenção:</strong> A Intelligence Flow Ltda não se responsabiliza por decisões financeiras tomadas com base na ferramenta.
-        <br><br>
-        <div style="text-align: center;"><strong>Intelligence Flow Solutions © 2026</strong> - Todos os direitos reservados.</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # A variável abaixo NÃO pode ter indentação (espaços) no início das linhas
+    html_content = """
+<div style="background-color: #0f1115; color: #64748b; padding: 15px; font-size: 0.75rem; border-top: 1px solid #334155; text-align: justify; margin-top: 30px;">
+    <strong style="color: #94a3b8;">⚠️ DISCLAIMER REGULATÓRIO & RISCO DE MERCADO</strong><br><br>
+    <strong>1. Natureza Tecnológica:</strong> O "Agente Intelligence Flow" é um sistema de Inteligência Artificial Generativa. Interpretações baseadas em estatística, não garantem rentabilidade.<br>
+    <strong>2. Não é Recomendação (CVM 20):</strong> Material estritamente educativo (Full and Fair Disclosure). Não constitui oferta ou Call de compra/venda.<br>
+    <strong>3. Riscos:</strong> Day Trade envolve alto risco e possibilidade de perda total do capital.<br>
+    <strong>4. Isenção:</strong> A Intelligence Flow Ltda não se responsabiliza por decisões financeiras tomadas com base na ferramenta.
+    <br><br>
+    <div style="text-align: center;"><strong>Intelligence Flow Solutions © 2026</strong> - Todos os direitos reservados.</div>
+</div>
+"""
+    st.markdown(html_content, unsafe_allow_html=True)
