@@ -3,29 +3,36 @@ import time
 import random
 from datetime import datetime
 
-# IMPORTS DOS MÓDULOS (Mantendo sua estrutura original)
+# IMPORTS DOS MÓDULOS
 import modules.landing_page as landing_page
 import modules.ecosystem as ecosystem
 import modules.solutions as solutions
 import modules.ui_styles as ui_styles
-import modules.notifications as notifications # Seu módulo de disparo de e-mail
-import modules.trading_desk as trading_desk   # O módulo que atualizamos com IA
+import modules.trading_desk as trading_desk
+import modules.notifications as notifications
+import modules.simulator as simulator # <--- NOVO IMPORT
 
 # --- CONFIGURAÇÃO INICIAL ---
 st.set_page_config(page_title="Intelligence Flow", page_icon="💠", layout="wide")
 ui_styles.apply_design()
 
-# --- GESTÃO DE ESTADO (SESSION STATE) - Mantido idêntico ao seu original ---
+# --- GESTÃO DE ESTADO ---
 if 'page' not in st.session_state: st.session_state.page = 'home'
 if 'auth_status' not in st.session_state: st.session_state.auth_status = False
 if 'otp_code' not in st.session_state: st.session_state.otp_code = None
 if 'otp_email' not in st.session_state: st.session_state.otp_email = ""
 if 'last_otp_time' not in st.session_state: st.session_state.last_otp_time = 0
-if 'login_step' not in st.session_state: st.session_state.login_step = 1 # 1=Email, 2=Código
+if 'login_step' not in st.session_state: st.session_state.login_step = 1
 
 # --- MENU DE NAVEGAÇÃO ---
 st.markdown("<div class='nav-container'>", unsafe_allow_html=True)
-c1, c2, c3, c4 = st.columns(4)
+
+# Lógica de colunas dinâmica (Se for Master, cria espaço para o botão extra)
+if st.session_state.auth_status and st.session_state.otp_email == "jorley.zimermann@intelligenceflow.pro":
+    c1, c2, c3, c4, c5 = st.columns(5) # 5 Colunas para o Master
+else:
+    c1, c2, c3, c4 = st.columns(4) # 4 Colunas para usuários normais
+
 with c1:
     if st.button("🏠 PÁGINA INICIAL"): st.session_state.page = 'home'
 with c2:
@@ -34,6 +41,14 @@ with c3:
     if st.button("💎 SOLUÇÕES"): st.session_state.page = 'solutions'
 with c4:
     if st.button("🔐 ÁREA DO TRADER"): st.session_state.page = 'trader'
+
+# BOTÃO SECRETO DO MASTER
+if st.session_state.auth_status and st.session_state.otp_email == "jorley.zimermann@intelligenceflow.pro":
+    with c5:
+        # Estilo visual diferenciado (Vermelho/Alerta) para o Admin
+        if st.button("🕹️ SIMULADOR (ADMIN)", type="secondary"): 
+            st.session_state.page = 'simulator'
+
 st.markdown("</div>", unsafe_allow_html=True)
 
 # --- ROTEAMENTO DE PÁGINAS ---
@@ -46,9 +61,13 @@ elif st.session_state.page == 'ecosystem':
 elif st.session_state.page == 'solutions':
     solutions.show_solutions()
 
+# ROTA SECRETA
+elif st.session_state.page == 'simulator':
+    # Chama o módulo protegido
+    simulator.render_simulator()
+
 elif st.session_state.page == 'trader':
-    
-    # --- FLUXO DE LOGIN (MANTIDO O SEU ORIGINAL) ---
+    # --- FLUXO DE LOGIN ---
     if st.session_state.auth_status:
         # --- ÁREA LOGADA ---
         c_usr, c_out = st.columns([6, 1])
@@ -61,18 +80,13 @@ elif st.session_state.page == 'trader':
                 st.session_state.otp_code = None
                 st.rerun()
         
-        # *** AQUI ESTÁ A MUDANÇA ***
-        # Chamamos a função nova que criamos no modules/trading_desk.py
-        # Se você manteve o nome 'show_desk', use show_desk(). 
-        # Se usou o código novo que enviei antes (render_trading_desk), use a linha abaixo:
         try:
             trading_desk.render_trading_desk()
         except AttributeError:
-            # Fallback caso você não tenha atualizado o nome da função no arquivo trading_desk.py
             trading_desk.show_desk()
 
-    # --- FLUXO DE NÃO LOGADO (MANTIDO INTEGRALMENTE) ---
     else:
+        # (O CÓDIGO DE LOGIN MANTÉM-SE IDÊNTICO AO SEU ORIGINAL ABAIXO)
         st.markdown("<br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 1, 1])
         
@@ -89,6 +103,7 @@ elif st.session_state.page == 'trader':
                 email_input = st.text_input("Digite seu e-mail corporativo", placeholder="ex: trader@intelligenceflow.com")
                 
                 if st.button("ENVIAR CÓDIGO DE ACESSO", type="primary", use_container_width=True):
+                    # Validação básica de email
                     if "@" in email_input and "." in email_input:
                         code = str(random.randint(1000, 9999))
                         
@@ -97,7 +112,6 @@ elif st.session_state.page == 'trader':
                         st.session_state.last_otp_time = time.time()
                         
                         with st.spinner("Enviando token de segurança..."):
-                            # Chama seu módulo original de notificações
                             sent = notifications.send_otp_email(email_input, code)
                             
                         if sent:
