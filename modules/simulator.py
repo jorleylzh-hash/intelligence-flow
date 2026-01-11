@@ -176,13 +176,39 @@ def render_simulator():
                 
                 fig_mc = go.Figure()
                 
-                # Plota amostra de caminhos
+                # Plota amostra de caminhos (Fundo)
                 for i in range(50):
-                    fig_mc.add_trace(go.Scatter(y=paths[:, i], mode='lines', line=dict(width=1, color='rgba(59, 130, 246, 0.1)'), showlegend=False))
+                    fig_mc.add_trace(go.Scatter(
+                        y=paths[:, i], 
+                        mode='lines', 
+                        line=dict(width=1, color='rgba(59, 130, 246, 0.1)'), 
+                        showlegend=False
+                    ))
                 
                 # Estatísticas
                 mean_path = np.mean(paths, axis=1)
                 p95 = np.percentile(paths, 95, axis=1)
                 p05 = np.percentile(paths, 5, axis=1)
                 
-                fig_mc.add_trace(go.Scatter(y=mean_path, mode='lines', name='Média', line=dict(
+                # CORREÇÃO DO ERRO DE SINTAXE AQUI:
+                fig_mc.add_trace(go.Scatter(
+                    y=mean_path, 
+                    mode='lines', 
+                    name='Média', 
+                    line=dict(color='white', width=3)
+                ))
+                fig_mc.add_trace(go.Scatter(
+                    y=p95, 
+                    mode='lines', 
+                    name='Otimista (95%)', 
+                    line=dict(color='#10b981', width=2, dash='dot')
+                ))
+                fig_mc.add_trace(go.Scatter(
+                    y=p05, 
+                    mode='lines', 
+                    name='Pessimista (5%)', 
+                    line=dict(color='#ef4444', width=2, dash='dot')
+                ))
+                
+                fig_mc.update_layout(template="plotly_dark", title=f"Cone de Probabilidade ({mc_days} Dias)", showlegend=True)
+                st.plotly_chart(fig_mc, use_container_width=True)
