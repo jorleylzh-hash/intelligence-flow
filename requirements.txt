@@ -1,8 +1,7 @@
 streamlit
-streamlit-authenticator>=0.3.3
 pandas
-yfinance
-plotly
-streamlit-lottie
+numpy
 requests
-streamlit-lightweight-charts
+plotly
+streamlit-authenticator
+resend
