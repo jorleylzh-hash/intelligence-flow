@@ -1,100 +1,101 @@
 import streamlit as st
 
 def apply_design():
+    """
+    Aplica o CSS global da aplicação (Estilo Dark/Institutional).
+    """
     st.markdown("""
     <style>
-        /* 1. RESET E FUNDO (Deep Navy Professional) */
-        [data-testid="stSidebar"] { display: none; }
-        #MainMenu { visibility: hidden; }
-        footer { visibility: hidden; }
+        /* Importação de Fontes */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
         
-        .stApp {
-            background-color: #0f172a; /* Azul Noturno */
-            background-image: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        /* Estrutura Geral */
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1115; /* Fundo Ultra Dark */
+            color: #e2e8f0;
         }
-
-        /* 2. MENU DE NAVEGAÇÃO RESPONSIVO */
+        
+        /* Menu de Navegação Superior */
         .nav-container {
             display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            justify-content: space-around;
+            background-color: #1e293b;
             padding: 10px;
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid #334155;
-        }
-        
-        .stButton > button {
-            background: transparent;
-            color: #cbd5e1;
-            border: 1px solid transparent;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-            transition: all 0.3s;
-            width: 100%; /* Mobile Friendly */
-        }
-        
-        .stButton > button:hover {
-            border-color: #3b82f6;
-            color: #3b82f6;
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        /* 3. TIPOGRAFIA RESPONSIVA */
-        h1 { font-size: 2.5rem !important; }
-        h2 { font-size: 1.8rem !important; }
-        
-        /* Ajustes para Mobile (Smartphones) */
-        @media only screen and (max-width: 600px) {
-            h1 { font-size: 1.8rem !important; }
-            h2 { font-size: 1.4rem !important; }
-            .stButton > button { font-size: 0.7rem; padding: 5px; }
-        }
-        
-        /* Ajustes para Smart TV (4K) */
-        @media only screen and (min-width: 2000px) {
-            .stApp { zoom: 1.5; } /* Aumenta escala para ver de longe */
-        }
-
-        /* 4. CARDS E CONTEÚDO */
-        .tech-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            padding: 20px;
             border-radius: 8px;
-            margin-bottom: 15px;
+            border: 1px solid #334155;
+            margin-bottom: 20px;
         }
-        .highlight-text { color: #60a5fa; font-weight: bold; }
-        .math-block { 
-            background: #020617; 
-            padding: 15px; 
-            border-left: 3px solid #f59e0b; 
-            font-family: 'Courier New', monospace;
-            color: #fbbf24;
-            overflow-x: auto;
+        
+        /* Botões do Streamlit (Customização) */
+        div.stButton > button {
+            background-color: transparent;
+            border: 1px solid transparent;
+            color: #cbd5e1;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        div.stButton > button:hover {
+            border-color: #d2a106; /* Dourado da Marca */
+            color: #d2a106;
+            background-color: rgba(210, 161, 6, 0.1);
+        }
+        
+        div.stButton > button:focus {
+            border-color: #d2a106;
+            color: #d2a106;
+            box-shadow: none;
         }
 
-        /* 5. RODAPÉ */
-        .footer-cnpj {
-            margin-top: 80px;
-            padding: 30px;
-            border-top: 1px solid #334155;
-            text-align: center;
-            background: #020617;
-            font-size: 0.8rem;
-            color: #64748b;
+        /* Inputs e Caixas de Texto */
+        .stTextInput > div > div > input {
+            background-color: #1e293b;
+            color: white;
+            border: 1px solid #334155;
+        }
+        
+        /* Métricas */
+        [data-testid="stMetricValue"] {
+            font-size: 1.8rem;
+            color: #d2a106;
         }
     </style>
     """, unsafe_allow_html=True)
 
 def show_footer_cnpj():
+    """
+    Rodapé simples com CNPJ (Usado na Landing Page ou Login).
+    """
+    st.markdown("---")
+    st.markdown(
+        "<div style='text-align: center; color: #64748b; font-size: 0.8em;'>"
+        "Intelligence Flow Ltda &copy; 2026 | CNPJ: 58.264.493/0001-33<br>"
+        "Paranaguá - PR | Head of Operations: Jorley Zimermann"
+        "</div>", 
+        unsafe_allow_html=True
+    )
+
+def show_compliance_footer():
+    """
+    Rodapé Regulatório COMPLETO (Exigido pela CVM para telas logadas).
+    CORRIGE O ERRO: AttributeError: module has no attribute 'show_compliance_footer'
+    """
+    st.markdown("---")
     st.markdown("""
-    <div class="footer-cnpj">
-        <strong style="color:#e2e8f0;">INTELLIGENCE FLOW TRATAMENTO DE DADOS LTDA</strong><br>
-        CNPJ: 63.698.191/0001-27<br>
-        Av. João Gualberto, 1721 - Conj 52, Andar 05 - Edif Vega Business - Curitiba/PR<br>
-        © 2026 Intelligence Flow System
+    <div style="background-color: #0f1115; color: #64748b; padding: 20px; font-size: 0.75rem; border-top: 1px solid #334155; text-align: justify; margin-top: 50px;">
+        <strong>⚠️ DISCLAIMER REGULATÓRIO & RISCO DE MERCADO</strong><br><br>
+        
+        1. <strong>Natureza Tecnológica:</strong> O "Agente Intelligence Flow" é um sistema de Inteligência Artificial Generativa. As interpretações fornecidas são baseadas em modelos estatísticos e dados históricos, não garantindo rentabilidade futura.<br>
+        
+        2. <strong>Não é Recomendação (CVM 20):</strong> Este material tem caráter exclusivamente educativo e informativo (Full and Fair Disclosure). Nenhuma informação contida nesta plataforma constitui recomendação de investimento, análise de valores mobiliários ou "Call" de compra/venda.<br>
+        
+        3. <strong>Riscos:</strong> Operações em renda variável, derivativos e mercado de futuros (Day Trade) envolvem alto nível de risco e podem resultar na perda total do capital investido. O usuário é o único responsável por suas decisões.<br>
+        
+        4. <strong>Isenção:</strong> A Intelligence Flow Ltda não se responsabiliza por prejuízos financeiros decorrentes do uso das ferramentas automatizadas.
+        
+        <br><br>
+        <center><strong>Intelligence Flow Solutions © 2026 - Todos os direitos reservados.</strong></center>
     </div>
     """, unsafe_allow_html=True)
