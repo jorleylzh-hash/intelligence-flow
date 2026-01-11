@@ -13,7 +13,7 @@ def consultar_gemini(dados_mercado, spread_arbitragem):
 
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
 
         prompt = f"""
         Você é o analista chefe da Intelligence Flow.
