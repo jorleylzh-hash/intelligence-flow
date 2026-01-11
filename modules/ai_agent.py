@@ -80,55 +80,56 @@ REGRAS DE CONDUTA:
 4. Assuntos fora de finanças devem ser recusados cordialmente.
 """
 
-# --- 5. FUNÇÃO PRINCIPAL DE CONSULTA ---
+# ... (Mantenha o início do arquivo igual) ...
+
+# --- 5. FUNÇÃO PRINCIPAL DE CONSULTA (CHAT DO TRADER) ---
 def consultar_gemini(user_input, contexto_adicional=""):
     if not configure_genai(): return "⚠️ Erro: Chave API ausente."
     
     user_input_clean = user_input.strip().lower()
 
-    # --- COMANDO 1: COTAÇÕES ---
     if user_input_clean == "assets value":
         dados = get_market_overview()
         prompt_final = f"""
         {SYSTEM_INSTRUCTION}
         O usuário executou o comando 'assets value'.
         Dados brutos: {dados}
-        TAREFA: Gere uma tabela Markdown com estes valores. Adicione um breve comentário sobre a volatilidade atual.
+        TAREFA: Gere uma tabela Markdown com estes valores.
         """
         
-    # --- COMANDO 2: CONTEÚDO EDUCACIONAL (NOVO) ---
     elif user_input_clean == "educational map" or user_input_clean == "topicos":
         syllabus = get_educational_syllabus()
         prompt_final = f"""
         {SYSTEM_INSTRUCTION}
         O usuário executou o comando 'educational map'.
-        
-        EMENTA DO CURSO:
-        {syllabus}
-        
-        TAREFA:
-        1. Apresente esta ementa em formato de Lista Estruturada (Markdown).
-        2. Convide o usuário a escolher um tópico para aprender mais (Ex: "Digite 'História da B3' para saber mais").
-        3. Use emojis para separar os módulos.
+        EMENTA: {syllabus}
+        TAREFA: Apresente esta ementa em formato de Lista.
         """
     
-    # --- FLUXO LIVRE (PERGUNTAS GERAIS) ---
     else:
         prompt_final = f"""
         {SYSTEM_INSTRUCTION}
+        CONTEXTO TÉCNICO: {contexto_adicional}
         PERGUNTA DO USUÁRIO: "{user_input}"
         """
 
     try:
+        # Tenta o modelo 2.5 Pro (o mais potente que sua conta tem)
         model = genai.GenerativeModel('gemini-2.5-pro')
         return model.generate_content(prompt_final).text
     except Exception as e:
-        return f"Erro no Agente: {str(e)}"
+        # SE FALHAR, MOSTRA O ERRO REAL PARA NÓS
+        return f"❌ Erro Técnico na IA: {str(e)}"
 
-# Mantido para compatibilidade com o módulo Solutions
+# --- 6. FUNÇÃO DE SOLUÇÕES (ONDE DEU O ERRO NO SEU PRINT) ---
 def gerar_roadmap_solucoes(problema):
     if not configure_genai(): return "Erro API"
     try:
+        # Tenta o modelo 2.5 Pro
         model = genai.GenerativeModel('gemini-2.5-pro')
-        return model.generate_content(f"{SYSTEM_INSTRUCTION}\nRoadmap para: {problema}").text
-    except: return "Erro"
+        prompt = f"{SYSTEM_INSTRUCTION}\n\nRoadmap para: {problema}"
+        return model.generate_content(prompt).text
+    except Exception as e: 
+        # AQUI ESTAVA O PROBLEMA: "return 'Erro'"
+        # AGORA VAI MOSTRAR O MOTIVO:
+        return f"❌ Falha ao gerar Roadmap: {str(e)}"
