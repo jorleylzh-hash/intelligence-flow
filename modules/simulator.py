@@ -8,27 +8,13 @@ from datetime import datetime
 
 # --- FUNÇÕES UTILITÁRIAS ---
 def get_remote_ip():
-    """
-    Tenta identificar o IP do usuário de forma moderna e compatível.
-    Remove o aviso 'deprecated' do Streamlit.
-    """
     try:
-        # Tenta o método novo (Streamlit 1.30+)
         if hasattr(st, "context") and hasattr(st.context, "headers"):
             headers = st.context.headers
             x_forwarded = headers.get("X-Forwarded-For")
             if x_forwarded: return x_forwarded.split(",")[0]
-            
-        # Fallback para método antigo (caso o servidor esteja desatualizado)
-        from streamlit.web.server.websocket_headers import _get_websocket_headers
-        headers = _get_websocket_headers()
-        if headers:
-            x_forwarded = headers.get("X-Forwarded-For")
-            if x_forwarded: return x_forwarded.split(",")[0]
-            
         return "Visitante"
-    except: 
-        return "N/A"
+    except: return "N/A"
 
 # --- FUNÇÕES DE DADOS ---
 def fetch_brapi_history(ticker="PETR4"):
@@ -41,10 +27,8 @@ def fetch_brapi_history(ticker="PETR4"):
             df = df.rename(columns={'date': 'Date', 'close': 'Close', 'high': 'High', 'low': 'Low', 'open': 'Open'})
             df['Date'] = pd.to_datetime(df['Date'], unit='s')
             return df.sort_values('Date')
-    except:
-        pass
+    except: pass
     
-    # Fallback Sintético
     dates = pd.date_range(end=datetime.now(), periods=60, freq="D")
     price = 30.0 + np.cumsum(np.random.randn(60))
     return pd.DataFrame({"Date": dates, "Close": price, "Open": price, "High": price+0.5, "Low": price-0.5})
@@ -53,11 +37,22 @@ def run_monte_carlo(current_price, volatility, days_forecast=30, simulations=100
     dt = 1
     simulation_results = np.zeros((days_forecast, simulations))
     simulation_results[0] = current_price
+    
+    # Barra de Progresso na UI
+    progress_text = "Calculando cenários estocásticos..."
+    my_bar = st.progress(0, text=progress_text)
+    
     for t in range(1, days_forecast):
         shock = np.random.normal(0, 1, simulations)
         drift = -0.5 * (volatility ** 2) * dt
         diffusion = volatility * np.sqrt(dt) * shock
         simulation_results[t] = simulation_results[t-1] * np.exp(drift + diffusion)
+        
+        # Atualiza a barra de progresso
+        time.sleep(0.01) # Pequeno delay visual para sentir o processamento
+        my_bar.progress(t / days_forecast, text=f"Projetando dia {t}/{days_forecast}...")
+        
+    my_bar.empty() # Remove a barra quando termina
     return simulation_results
 
 # --- INTERFACE ---
@@ -77,16 +72,14 @@ def render_simulator():
         with c1: ticker_sim = st.selectbox("Ativo", ["PETR4", "VALE3", "WING26"])
         with c2: 
             if st.button("CARREGAR DADOS"):
-                with st.spinner("Baixando..."):
+                with st.spinner("Conectando à B3 (Brapi)..."): # Spinner aqui
                     st.session_state.replay_data = fetch_brapi_history(ticker_sim)
                     st.session_state.replay_index = 0
                     st.session_state.replay_running = False
-                    st.success("Dados OK!")
+                    st.success("Dados carregados com sucesso!")
 
         if st.session_state.get('replay_data') is not None:
             df = st.session_state.replay_data
-            
-            # Controles
             cc1, cc2, cc3 = st.columns(3)
             with cc1: 
                 if st.button("▶️ PLAY"): st.session_state.replay_running = True
@@ -98,13 +91,11 @@ def render_simulator():
                     st.session_state.replay_index = 0
                     st.rerun()
 
-            # Loop de Animação
             if st.session_state.replay_running and st.session_state.replay_index < len(df) - 1:
                 st.session_state.replay_index += 1
-                time.sleep(0.5) # Velocidade Fixa
+                time.sleep(0.5)
                 st.rerun()
 
-            # Gráfico
             curr = st.session_state.replay_index
             df_slice = df.iloc[:curr+1]
             fig = go.Figure(data=[go.Candlestick(x=df_slice['Date'], open=df_slice['Open'], high=df_slice['High'], low=df_slice['Low'], close=df_slice['Close'])])
@@ -116,9 +107,10 @@ def render_simulator():
         c_mc1, c_mc2 = st.columns([1, 3])
         
         with c_mc1:
-            mc_price = st.number_input("Preço", value=30.0)
-            mc_vol = st.number_input("Volatilidade %", value=35.0) / 100
-            if st.button("RODAR"):
+            mc_price = st.number_input("Preço Base (R$)", value=30.0)
+            mc_vol = st.number_input("Volatilidade (%)", value=35.0) / 100
+            if st.button("RODAR SIMULAÇÃO ⚡"):
+                # Chama a função que tem a Barra de Progresso
                 st.session_state.mc_paths = run_monte_carlo(mc_price, mc_vol/15.87, 30, 1000)
 
         with c_mc2:
@@ -126,11 +118,10 @@ def render_simulator():
                 paths = st.session_state.mc_paths
                 fig_mc = go.Figure()
                 
-                # Plota 50 linhas finas
                 for i in range(50):
                     fig_mc.add_trace(go.Scatter(y=paths[:, i], mode='lines', line=dict(width=1, color='rgba(59, 130, 246, 0.1)'), showlegend=False))
                 
-                # Estatísticas e Linhas Principais (Aqui estava o erro de sintaxe)
+                # SINTAXE CORRIGIDA AQUI:
                 fig_mc.add_trace(go.Scatter(y=np.mean(paths, axis=1), mode='lines', name='Média', line=dict(color='white', width=3)))
                 fig_mc.add_trace(go.Scatter(y=np.percentile(paths, 95, axis=1), mode='lines', name='Topo 95%', line=dict(color='green', width=2, dash='dot')))
                 fig_mc.add_trace(go.Scatter(y=np.percentile(paths, 5, axis=1), mode='lines', name='Fundo 5%', line=dict(color='red', width=2, dash='dot')))
