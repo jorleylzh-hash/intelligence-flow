@@ -38,7 +38,7 @@ def run_monte_carlo(current_price, volatility, days_forecast=30, simulations=100
     simulation_results = np.zeros((days_forecast, simulations))
     simulation_results[0] = current_price
     
-    # Barra de Progresso na UI
+    # BARRA DE PROGRESSO AQUI
     progress_text = "Calculando cenários estocásticos..."
     my_bar = st.progress(0, text=progress_text)
     
@@ -48,11 +48,11 @@ def run_monte_carlo(current_price, volatility, days_forecast=30, simulations=100
         diffusion = volatility * np.sqrt(dt) * shock
         simulation_results[t] = simulation_results[t-1] * np.exp(drift + diffusion)
         
-        # Atualiza a barra de progresso
-        time.sleep(0.01) # Pequeno delay visual para sentir o processamento
-        my_bar.progress(t / days_forecast, text=f"Projetando dia {t}/{days_forecast}...")
+        # Atualiza a barra a cada passo
+        time.sleep(0.01) 
+        my_bar.progress(int((t / days_forecast) * 100), text=f"Projetando dia {t}/{days_forecast}...")
         
-    my_bar.empty() # Remove a barra quando termina
+    my_bar.empty() # Remove barra ao fim
     return simulation_results
 
 # --- INTERFACE ---
@@ -72,11 +72,11 @@ def render_simulator():
         with c1: ticker_sim = st.selectbox("Ativo", ["PETR4", "VALE3", "WING26"])
         with c2: 
             if st.button("CARREGAR DADOS"):
-                with st.spinner("Conectando à B3 (Brapi)..."): # Spinner aqui
+                with st.spinner("Conectando à B3..."):
                     st.session_state.replay_data = fetch_brapi_history(ticker_sim)
                     st.session_state.replay_index = 0
                     st.session_state.replay_running = False
-                    st.success("Dados carregados com sucesso!")
+                    st.success("Histórico carregado!")
 
         if st.session_state.get('replay_data') is not None:
             df = st.session_state.replay_data
@@ -110,7 +110,6 @@ def render_simulator():
             mc_price = st.number_input("Preço Base (R$)", value=30.0)
             mc_vol = st.number_input("Volatilidade (%)", value=35.0) / 100
             if st.button("RODAR SIMULAÇÃO ⚡"):
-                # Chama a função que tem a Barra de Progresso
                 st.session_state.mc_paths = run_monte_carlo(mc_price, mc_vol/15.87, 30, 1000)
 
         with c_mc2:
@@ -121,7 +120,6 @@ def render_simulator():
                 for i in range(50):
                     fig_mc.add_trace(go.Scatter(y=paths[:, i], mode='lines', line=dict(width=1, color='rgba(59, 130, 246, 0.1)'), showlegend=False))
                 
-                # SINTAXE CORRIGIDA AQUI:
                 fig_mc.add_trace(go.Scatter(y=np.mean(paths, axis=1), mode='lines', name='Média', line=dict(color='white', width=3)))
                 fig_mc.add_trace(go.Scatter(y=np.percentile(paths, 95, axis=1), mode='lines', name='Topo 95%', line=dict(color='green', width=2, dash='dot')))
                 fig_mc.add_trace(go.Scatter(y=np.percentile(paths, 5, axis=1), mode='lines', name='Fundo 5%', line=dict(color='red', width=2, dash='dot')))
