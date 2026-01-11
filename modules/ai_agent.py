@@ -8,52 +8,67 @@ def configure_genai():
     genai.configure(api_key=api_key)
     return True
 
-def try_generate(prompt):
-    """
-    Tenta gerar conteúdo testando múltiplos modelos em sequência.
-    Isso resolve o problema de erro 404 por nome de modelo errado.
-    """
-    # Lista de tentativas: Do mais novo para o mais antigo/estável
-    modelos_tentativa = [
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-1.0-pro', 
-        'gemini-pro'
-    ]
-    
-    erros = []
-
-    for nome_modelo in modelos_tentativa:
-        try:
-            model = genai.GenerativeModel(nome_modelo)
-            response = model.generate_content(prompt)
-            return response.text # Sucesso! Retorna e sai da função.
-        except Exception as e:
-            erros.append(f"{nome_modelo}: {str(e)}")
-            continue # Tenta o próximo da lista
-            
-    # Se chegou aqui, todos falharam. Vamos tentar listar o que existe.
-    try:
-        disponiveis = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        lista_str = ", ".join(disponiveis)
-        return f"⚠️ ERRO CRÍTICO IA. Nenhum modelo funcionou.\nModelos disponíveis na sua conta: {lista_str}.\nErros técnicos: {erros}"
-    except Exception as e_list:
-        return f"⚠️ ERRO TOTAL. API Key pode estar inválida ou sem permissão.\nDetalhes: {erros}"
-
 def consultar_gemini(dados_mercado, spread_arbitragem):
-    if not configure_genai(): return "⚠️ Configurar GEMINI_API_KEY no Render."
-    
-    prompt = f"""
-    Analista de Trading. Dados: {dados_mercado}. Spread: {spread_arbitragem}%.
-    Responda curto: 1. Sentimento 2. Arbitragem 3. Divergências.
     """
-    return try_generate(prompt)
+    IA para o TRADING DESK
+    """
+    if not configure_genai(): return "⚠️ Erro: Chave API ausente."
+
+    try:
+        # ATUALIZADO: Usando o modelo disponível na sua conta
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"""
+        Atue como Head de Trading Institucional.
+        Dados: {dados_mercado}
+        Arbitragem: {spread_arbitragem}%
+        
+        Responda em 3 bullets curtos:
+        1. Sentimento (Bullish/Bearish/Neutro)
+        2. Avaliação da Arbitragem
+        3. Divergências Críticas
+        """
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        # Fallback de segurança: Se o 2.5 falhar, tenta o 2.0
+        try:
+            model = genai.GenerativeModel('gemini-2.0-flash')
+            response = model.generate_content(prompt)
+            return response.text
+        except:
+            return f"Erro IA: {str(e)}"
 
 def gerar_roadmap_solucoes(problema_usuario):
-    if not configure_genai(): return "⚠️ Configurar GEMINI_API_KEY no Render."
-    
-    prompt = f"""
-    Arquiteto de Soluções. Desafio: "{problema_usuario}".
-    Gere um Roadmap em Markdown (Objetivo, Fases 1/2/3, Insight).
+    """ 
+    IA para a área de SOLUÇÕES 
     """
-    return try_generate(prompt)
+    if not configure_genai(): return "⚠️ Erro: Chave API ausente."
+
+    try:
+        # ATUALIZADO: Usando o modelo disponível na sua conta
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"""
+        Você é o Arquiteto de Soluções da Intelligence Flow.
+        Desafio: "{problema_usuario}"
+        
+        Gere um MAPA ESTRATÉGICO (Markdown).
+        Estrutura Obrigatória:
+        ### 🎯 Objetivo Central
+        [Texto]
+        ### 🗺️ Fases de Implementação
+        #### Fase 1: Diagnóstico 🏗️
+        * [Ação]
+        #### Fase 2: Execução 🚀
+        * [Ação]
+        #### Fase 3: Resultados 💎
+        * [Métrica]
+        ---
+        **💡 Insight IF:** [Frase final]
+        """
+        
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"Erro ao gerar mapa: {str(e)}"
