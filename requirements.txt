@@ -8,5 +8,6 @@ resend
 google-generativeai>=0.7.0
 yfinance
 pyngrok
+nest_asyncio
 fastapi
-
+uvicorn
