@@ -1,93 +1,121 @@
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-# Importa a função do arquivo vizinho dentro da pasta modules
-from modules.ai_agent import consultar_gemini 
+import time
+import random # Apenas para simulação, substitua pelas suas APIs
+import streamlit as st # Assumindo Streamlit pela estrutura
+import plotly.graph_objects as go # Para gráficos fluidos
 
+# --- 1. FUNÇÕES DE CÁLCULO (O Cérebro) ---
+def calcular_metricas_trader(ativo, preco_atual):
+    # Simulação de Bid/Ask para calcular Spread
+    bid = preco_atual - random.uniform(0.0, 1.0)
+    ask = preco_atual + random.uniform(0.0, 1.0)
+    
+    # 1. CÁLCULO DO SPREAD (Pedido do User)
+    spread = ask - bid
+    
+    # 2. SENTIMENTO RISK ON/OFF (Simulado)
+    # Lógica: Se S&P sobe e Juros caem = Risk On
+    fator_macro = random.random()
+    risk_sentiment = "RISK ON 🟢" if fator_macro > 0.4 else "RISK OFF 🔴"
+    
+    # 3. MENSAGEM CRÍTICA DA IA (Dinâmica por ativo)
+    msgs = {
+        'WDO': f"IA: Fluxo vendedor absorvendo compras em {preco_atual}. Spread de {spread:.1f}pts indica liquidez média.",
+        'WIN': f"IA: Estrutura de alta confirmada acima da VWAP. Alvo técnico projetado em +500pts.",
+        'DXY': f"IA: Dólar global ganhando tração. Cuidado com vendas em WDO.",
+    }
+    msg_ia = msgs.get(ativo, "IA: Analisando fluxo e correlações...")
+
+    return {
+        "preco": preco_atual,
+        "bid": bid,
+        "ask": ask,
+        "spread": spread,
+        "risk": risk_sentiment,
+        "msg_ia": msg_ia,
+        "irr": random.randint(30, 80) # Seu IRR(9)
+    }
+
+# --- 2. A INTERFACE (Sem Piscar) ---
 def render_trader_area():
-    st.markdown("## 🦅 Intelligence Flow | Trader Cockpit")
+    # A. CONFIGURAÇÃO INICIAL (Roda apenas uma vez)
+    st.markdown("## ⚡ Intelligence Flow | Trader Workstation")
     
-    # --- 1. SELEÇÃO DE ATIVO ---
-    col_sel, col_blank = st.columns([1, 3])
-    with col_sel:
-        ativo_principal = st.selectbox("Ativo Principal", ["WING26", "PETR4", "VALE3"])
+    # Top Bar Fixa
+    col_top1, col_top2 = st.columns([3, 1])
+    with col_top1:
+        ativo_selecionado = st.selectbox("Ativo Monitorado", ["WDO", "WIN", "DXY", "SPX"])
+    with col_top2:
+        # Placeholder para o Risk Sentiment (Para não piscar a barra toda)
+        risk_placeholder = st.empty()
 
-    # --- 2. SIMULAÇÃO DE DADOS (Substitua por BRAPI aqui depois) ---
-    # Normalizando dados para % para caber tudo no mesmo gráfico
-    times = pd.date_range(start="09:00", periods=40, freq="10min").strftime("%H:%M")
-    
-    # Dados fictícios para estrutura visual
-    df = pd.DataFrame({
-        "Hora": times,
-        "Principal": [x * 0.15 for x in range(40)], # Tendência Alta
-        "Driver_1":  [x * 0.12 for x in range(40)], # Segue
-        "Driver_2":  [x * -0.05 for x in range(40)], # Divergência
-        "Juros_DI":  [x * -0.02 for x in range(40)]  # Caindo (Ajuda o índice)
-    })
+    # Área da Mensagem da IA
+    st.markdown("---")
+    ai_msg_placeholder = st.empty() # Placeholder da IA
+    st.markdown("---")
 
-    # --- 3. GRÁFICO DRIVERS (NORMALIZADO EM %) ---
-    st.markdown("### 📊 Drivers de Mercado (Correlação Intraday %)")
+    # Layout Principal
+    col1, col2, col3 = st.columns([1, 3, 1])
     
-    fig = go.Figure()
-    
-    # Linha Principal (Ouro)
-    fig.add_trace(go.Scatter(x=df['Hora'], y=df['Principal'], mode='lines', name=ativo_principal,
-                             line=dict(color='#d2a106', width=4)))
-    
-    # Drivers (Cores frias)
-    fig.add_trace(go.Scatter(x=df['Hora'], y=df['Driver_1'], mode='lines', name='Driver 1 (Petro)',
-                             line=dict(color='#3b82f6', width=2)))
-    fig.add_trace(go.Scatter(x=df['Hora'], y=df['Driver_2'], mode='lines', name='Driver 2 (Vale)',
-                             line=dict(color='#f97316', width=2)))
-    
-    # Juros Futuros (Vermelho - Importante!)
-    fig.add_trace(go.Scatter(x=df['Hora'], y=df['Juros_DI'], mode='lines', name='Juros Futuros (DI)',
-                             line=dict(color='#ef4444', width=2, dash='dot')))
+    with col1:
+        st.markdown("### Dados")
+        # Placeholders para dados numéricos
+        spread_placeholder = st.empty()
+        irr_placeholder = st.empty()
+        
+    with col2:
+        st.markdown("### Gráfico Operacional")
+        chart_placeholder = st.empty() # O gráfico vai aqui dentro
 
-    fig.update_layout(
-        template="plotly_dark", 
-        height=450, 
-        title="Todos os ativos partindo de 0% (Força Relativa)",
-        margin=dict(l=0, r=0, t=40, b=0)
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    with col3:
+        st.markdown("### SMC / HME")
+        smc_placeholder = st.empty()
 
-    # --- 4. ARBITRAGEM E IA ---
-    col_arb, col_ai = st.columns(2)
+    # B. LOOP DE ATUALIZAÇÃO (Aqui acontece a mágica fluida)
+    # O segredo é atualizar APENAS os placeholders, não a página toda.
+    preco_mock = 5000.0
     
-    with col_arb:
-        st.markdown("### ⚖️ Monitor Arbitragem")
+    while True:
+        # Atualiza dados simulados
+        preco_mock += random.uniform(-5, 5)
+        dados = calcular_metricas_trader(ativo_selecionado, preco_mock)
         
-        # Dados Exemplo
-        adr_ny = 13.20
-        fx = 5.85
-        local_b3 = 38.50
-        ratio = 2 # Ex: 2 ações = 1 ADR
+        # 1. Atualiza Risk On/Off
+        risk_placeholder.markdown(f"### {dados['risk']}")
         
-        parity = (adr_ny * fx) / ratio
-        spread = ((local_b3 - parity) / parity) * 100
+        # 2. Atualiza Msg IA (Crítica)
+        ai_msg_placeholder.info(f"🤖 **ANÁLISE:** {dados['msg_ia']}")
         
-        st.latex(r'''Spread = \frac{(ADR \times FX) - Local}{Local}''')
+        # 3. Atualiza Spread e IRR (Lateral)
+        # Cor condicional para o Spread
+        cor_spread = "red" if dados['spread'] > 1.5 else "green"
+        spread_placeholder.markdown(
+            f"""
+            **Spread:** :{cor_spread}[{dados['spread']:.1f} pts]  
+            Ask: {dados['ask']:.1f}  
+            Bid: {dados['bid']:.1f}
+            """
+        )
+        irr_placeholder.metric("IRR (9)", f"{dados['irr']}", delta_color="normal")
         
-        c1, c2 = st.columns(2)
-        c1.metric("Preço Justo (Paridade)", f"R$ {parity:.2f}")
-        c2.metric("Spread Atual", f"{spread:.2f}%", 
-                  delta_color="off" if -0.5 < spread < 0.5 else "inverse")
+        # 4. Atualiza Gráfico (Plotly é mais fluido que Matplotlib)
+        fig = go.Figure(go.Indicator(
+            mode = "number+delta",
+            value = dados['preco'],
+            delta = {'position': "top", 'reference': 5000},
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': f"Preço {ativo_selecionado}"}
+        ))
+        fig.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=20))
+        chart_placeholder.plotly_chart(fig, use_container_width=True)
 
-    with col_ai:
-        st.markdown("### 🤖 IA Intelligence Flow")
-        st.write("Conectado ao Gemini via Python")
-        
-        if st.button("Analisar Fluxo Agora"):
-            with st.spinner("Lendo mercado..."):
-                # Pacote de dados para a IA
-                info_mercado = {
-                    "Ativo": ativo_principal,
-                    "Tendencia_Principal": f"Alta de {df['Principal'].iloc[-1]}%",
-                    "Juros": "Em queda (Favorável)",
-                    "Divergencia": "Sim, Driver 2 negativo"
-                }
-                
-                # CHAMA O ARQUIVO ai_agent.py
-                analise = consultar_gemini(info_mercado, spread)
-                st.info(analise)
+        # 5. SMC
+        smc_placeholder.markdown(
+            f"""
+            - **OB Bear:** 5025.0
+            - **FVG:** 5010.0
+            - **OB Bull:** 4980.0
+            """
+        )
+
+        # Controle de Frame Rate (evita processamento excessivo)
+        time.sleep(0.5)
