@@ -1,26 +1,39 @@
-# Arquivo: app.py
+import dash
+from dash import dcc, html
+from dash.dependencies import Input, Output
+from modulo import market_view
 import os
-import webbrowser
-from modulo import modulo.dashboard_live
 
-def main():
-    try:
-        # Chama a inteligência do módulo
-        fig = dashboard_live.build_dashboard()
-        
-        # Salva e Exibe
-        filename = "Monitor_M5_Live.html"
-        fig.write_html(filename)
-        
-        print(f"\n[SUCESSO] Dashboard gerado: {filename}")
-        
-        # Abre automaticamente no navegador padrão
-        file_path = os.path.realpath(filename)
-        webbrowser.open(f'file://{file_path}')
-        
-    except Exception as e:
-        print(f"[ERRO CRÍTICO] Falha ao gerar dashboard: {e}")
+app = dash.Dash(__name__)
+server = app.server # Necessário para o Gunicorn no Render
 
-if __name__ == "__main__":
-    main()
+app.layout = html.Div(style={'backgroundColor': 'black', 'minHeight': '100vh', 'padding': '10px'}, children=[
+    
+    # Título e Status
+    html.Div([
+        html.H2("Intelligence Flow - M5 Dashboard", style={'color': '#00FF7F', 'textAlign': 'center'}),
+        html.P("Monitoramento Global & Arbitragem em Tempo Real (Delay YF)", style={'color': 'gray', 'textAlign': 'center'})
+    ]),
 
+    # Componente de Gráfico
+    dcc.Graph(
+        id='live-market-graph',
+        style={'height': '85vh'},
+        config={'displayModeBar': False} # Remove barra de ferramentas para visual limpo
+    ),
+
+    # Atualizador Automático (60 segundos)
+    dcc.Interval(
+        id='interval-update',
+        interval=60*1000, 
+        n_intervals=0
+    )
+])
+
+@app.callback(Output('live-market-graph', 'figure'),
+              Input('interval-update', 'n_intervals'))
+def update_dashboard(n):
+    return market_view.create_dashboard()
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
