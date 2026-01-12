@@ -14,8 +14,22 @@ import modules.notifications as notifications
 import modules.simulator as simulator
 import modules.splash as splash
 
+import streamlit as st
+from modules import data_feed
+
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Intelligence Flow", page_icon="💠", layout="wide")
+st.set_page_config(page_title="Intelligence Flow", layout="wide")
+
+# --- INICIALIZAÇÃO DA CONEXÃO (Apenas uma vez) ---
+if "mt5_conectado" not in st.session_state:
+    if data_feed.conectar_mt5():
+        st.session_state["mt5_conectado"] = True
+        st.toast("MT5 Conectado com Sucesso!", icon="✅")
+    else:
+        st.error("Falha ao conectar no MetaTrader 5. Verifique se o terminal está aberto.")
+        st.stop() # Para a execução se não conectar
+
+# ... resto do seu código ...
 
 # Splash Screen e Estilos
 splash.show_splash_screen()
@@ -104,3 +118,4 @@ elif st.session_state.page == 'trader':
                     st.rerun()
 
 ui_styles.show_compliance_footer()
+
