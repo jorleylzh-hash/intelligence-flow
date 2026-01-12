@@ -1,7 +1,7 @@
 # Arquivo: app.py
 import os
 import webbrowser
-from modulo import dashboard_live
+from modulo import modulo.dashboard_live
 
 def main():
     try:
@@ -23,3 +23,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
