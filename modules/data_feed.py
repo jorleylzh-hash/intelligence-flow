@@ -6,8 +6,8 @@ import yfinance as yf
 from datetime import datetime
 
 # --- CONFIGURAÇÃO JSONBIN (Sua Ponte Automática) ---
-BIN_ID = "COLE_SEU_BIN_ID_AQUI"
-API_KEY = "COLE_SUA_API_KEY_AQUI"
+BIN_ID = "69646fe2ae596e708fd6049f"
+API_KEY = "$2a$10$yaTm2tuNpX5.nY3IsbFx1eMZqTtLVG/6HgECo2TveCr3yCTBmvClK"
 
 # --- CONFIGURAÇÃO DE ATIVOS MACRO (YFinance) ---
 # Estes ativos serão baixados direto pela nuvem (não usam seu PC)
