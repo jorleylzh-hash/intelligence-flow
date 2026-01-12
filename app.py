@@ -1,7 +1,7 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
-from modulo import market_view
+from modules import market_view
 import os
 
 # Inicializa o App
@@ -43,3 +43,4 @@ def update_graph(n):
 if __name__ == '__main__':
     # Roda localmente para teste (mas no Render quem roda é o Gunicorn)
     app.run_server(debug=True)
+
