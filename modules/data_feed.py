@@ -1,46 +1,74 @@
 import requests
 import pandas as pd
+from datetime import datetime
 
-# Variável Global para armazenar a URL da ponte
-# (O usuário vai colar isso na tela do Streamlit)
-URL_PONTE = None 
+# Tenta importar MT5, mas não quebra se falhar (caso da Nuvem)
+try:
+    import MetaTrader5 as mt5
+    MT5_INSTALADO = True
+except ImportError:
+    MT5_INSTALADO = False
 
-def set_url_ponte(url):
-    global URL_PONTE
-    # Garante que não tem barra no final
-    URL_PONTE = url.rstrip("/")
-
-def get_data_ponte(lista_ativos):
+# --- FUNÇÃO PRINCIPAL HÍBRIDA ---
+def get_data_hibrido(lista_ativos, url_ponte=None):
     """
-    Busca dados direto do seu PC via API Ngrok
+    Busca dados. Se tiver URL da ponte, usa ela.
+    Se não, tenta MT5 local (apenas se estiver no PC).
     """
-    global URL_PONTE
     resultados = {}
     
-    if not URL_PONTE:
-        return {"ERRO": {"preco": 0, "origem": "URL Não Definida"}}
+    # Verifica se a URL é válida (remove barra final se tiver)
+    if url_ponte:
+        url_ponte = url_ponte.rstrip("/")
 
     for ativo in lista_ativos:
-        try:
-            # Faz a requisição para o seu PC: GET https://....ngrok-free.app/api/cotacao/WDO$N
-            response = requests.get(f"{URL_PONTE}/api/cotacao/{ativo}", timeout=2)
-            
-            if response.status_code == 200:
-                dados = response.json()
-                if "erro" not in dados:
-                    resultados[ativo] = {
-                        "preco": dados['preco'],
-                        "spread": dados['spread'],
-                        "ask": dados['ask'],
-                        "bid": dados['bid'],
-                        "origem": "PC Local (Ponte) 🌉"
-                    }
-                else:
-                    resultados[ativo] = {"preco": 0, "origem": "Erro MT5"}
-            else:
-                resultados[ativo] = {"preco": 0, "origem": "Erro Conexão"}
+        dados_coletados = None
+
+        # 1. TENTATIVA VIA PONTE (Prioridade na Nuvem)
+        if url_ponte:
+            try:
+                # Chama a API do seu PC: GET https://.../api/cotacao/WDO$N
+                resp = requests.get(f"{url_ponte}/api/cotacao/{ativo}", timeout=3)
+                if resp.status_code == 200:
+                    json_data = resp.json()
+                    if "erro" not in json_data:
+                        dados_coletados = {
+                            "preco": json_data['preco'],
+                            "bid": json_data['bid'],
+                            "ask": json_data['ask'],
+                            "spread": json_data.get('spread', 0.5),
+                            "volume": json_data.get('volume', 0),
+                            "origem": "Ponte Nuvem ☁️"
+                        }
+            except Exception as e:
+                # Se der erro na conexão, segue o baile
+                pass
+
+        # 2. TENTATIVA LOCAL (Fallback se estiver no PC sem ponte)
+        if dados_coletados is None and MT5_INSTALADO:
+            try:
+                # Garante conexão
+                if not mt5.initialize():
+                    mt5.initialize()
                 
-        except Exception as e:
-            resultados[ativo] = {"preco": 0, "origem": "Offline"}
+                if mt5.symbol_select(ativo, True):
+                    tick = mt5.symbol_info_tick(ativo)
+                    if tick:
+                        dados_coletados = {
+                            "preco": tick.last,
+                            "bid": tick.bid,
+                            "ask": tick.ask,
+                            "spread": tick.ask - tick.bid if tick.ask > tick.bid else 0.0,
+                            "volume": tick.volume_real,
+                            "origem": "MT5 Local 🏠"
+                        }
+            except:
+                pass
+
+        # 3. RESULTADO FINAL
+        if dados_coletados:
+            resultados[ativo] = dados_coletados
+        else:
+            resultados[ativo] = {"preco": 0.0, "origem": "Offline 🔴"}
 
     return resultados
