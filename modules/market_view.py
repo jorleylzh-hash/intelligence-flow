@@ -2,177 +2,166 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
 import requests
-import os
 
-# --- SUAS CHAVES DO JSONBIN (Para ler no Render) ---
-# Dica: No Render, o ideal é usar Environment Variables, mas para testar pode deixar hardcoded.
+# --- CONFIGURAÇÕES DE ACESSO (JsonBin) ---
 BIN_ID = "69646fe2ae596e708fd6049f"
 API_KEY = "$2a$10$yaTm2tuNpX5.nY3IsbFx1eMZqTtLVG/6HgECo2TveCr3yCTBmvClK"
 
-# --- MAPEAMENTO: NOME NO PAINEL -> NOME TÉCNICO ---
+# --- MAPEAMENTO DE ATIVOS ---
+# Label (Front) -> Chave Técnica (Back)
 ASSETS_MAP = {
-    # > MACRO GLOBAL (Yahoo Finance)
+    # > GLOBAL (Yahoo Finance)
     'S&P500 Fut':       {'type': 'global', 'ticker': 'ES=F'},
     'Dow Jones':        {'type': 'global', 'ticker': 'YM=F'},
     'DXY (Dólar)':      {'type': 'global', 'ticker': 'DX-Y.NYB'},
     'US 10Y Yield':     {'type': 'global', 'ticker': '^TNX'},
-    'Minério (Sing)':   {'type': 'global', 'ticker': 'TIO=F'},
     'EWZ (Brasil)':     {'type': 'global', 'ticker': 'EWZ'},
-    
-    # > ARBITRAGEM (ADRs - Yahoo Finance)
+    'Minério (Sing)':   {'type': 'global', 'ticker': 'TIO=F'},
+
+    # > ARBITRAGEM (YF - Apenas para cálculo)
     'Vale ADR':         {'type': 'global', 'ticker': 'VALE'},
     'Petro ADR':        {'type': 'global', 'ticker': 'PBR'},
-    'USD/BRL (Ref)':    {'type': 'global', 'ticker': 'BRL=X'},
+    'USD/BRL':          {'type': 'global', 'ticker': 'BRL=X'},
 
-    # > MERCADO LOCAL (B3 - Via JsonBin/MT5)
-    # A chave 'json_key' deve ser igual ao que seu script ponte_mt5_push.py está enviando
-    'WINFUT':           {'type': 'local',  'json_key': 'WIN$N'},
-    'WDOFUT':           {'type': 'local',  'json_key': 'WDO$N'},
-    'DI1F29':           {'type': 'local',  'json_key': 'DI1F29'},
-    'VALE3':            {'type': 'local',  'json_key': 'VALE3'},
-    'PETR4':            {'type': 'local',  'json_key': 'PETR4'},
-    'ITUB4':            {'type': 'local',  'json_key': 'ITUB4'},
-    'BBDC4':            {'type': 'local',  'json_key': 'BBDC4'},
-    'BOVA11':           {'type': 'local',  'json_key': 'BOVA11'},
-    'AXIA3':            {'type': 'local',  'json_key': 'AXIA3'},
-    'MULT3':            {'type': 'local',  'json_key': 'MULT3'},
-    'VIVA3':            {'type': 'local',  'json_key': 'VIVA3'},
-    'RENT3':            {'type': 'local',  'json_key': 'RENT3'}
+    # > LOCAL (B3 - Vindo do seu MT5 via JsonBin)
+    # A chave 'json_key' DEVE ser igual ao que está no seu ponte_mt5_push.py
+    'WINFUT':           {'type': 'local', 'json_key': 'WIN$N'},
+    'WDOFUT':           {'type': 'local', 'json_key': 'WDO$N'},
+    'DI1F29':           {'type': 'local', 'json_key': 'DI1F29'},
+    'VALE3':            {'type': 'local', 'json_key': 'VALE3'},
+    'PETR4':            {'type': 'local', 'json_key': 'PETR4'},
+    'ITUB4':            {'type': 'local', 'json_key': 'ITUB4'},
+    'BBDC4':            {'type': 'local', 'json_key': 'BBDC4'},
+    'BOVA11':           {'type': 'local', 'json_key': 'BOVA11'},
+    'AXIA3':            {'type': 'local', 'json_key': 'AXIA3'},
+    'MULT3':            {'type': 'local', 'json_key': 'MULT3'},
+    'VIVA3':            {'type': 'local', 'json_key': 'VIVA3'},
+    'RENT3':            {'type': 'local', 'json_key': 'RENT3'}
 }
 
-def get_data_local():
-    """Baixa dados do JsonBin (Cache Rápido do MT5)"""
+def get_local_data():
+    """Baixa o JSON enviado pelo seu MT5"""
     url = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
     headers = {'X-Master-Key': API_KEY}
     try:
-        req = requests.get(url, headers=headers, timeout=3)
-        if req.status_code == 200:
-            # O JsonBin retorna os dados dentro de 'record'
-            return req.json().get('record', {})
-        else:
-            print(f"Erro JsonBin: {req.status_code}")
-            return {}
-    except Exception as e:
-        print(f"Erro Conexão Local: {e}")
+        # Timeout curto para não travar o dashboard
+        r = requests.get(url, headers=headers, timeout=2.5)
+        if r.status_code == 200:
+            return r.json().get('record', {})
+        return {}
+    except Exception:
         return {}
 
-def get_data_yf():
-    """Baixa dados Globais (Cache Lento)"""
+def get_global_data():
+    """Baixa dados do Yahoo Finance"""
     import yfinance as yf
     tickers = [v['ticker'] for k, v in ASSETS_MAP.items() if v['type'] == 'global']
     try:
+        # Baixa apenas o necessário
         df = yf.download(tickers, period='5d', progress=False)['Close']
-        return df
-    except Exception as e:
-        print(f"Erro YF: {e}")
-        return pd.DataFrame()
+        if df.empty: return {}, {}
+        
+        # Pega último preço (Current) e Penúltimo (Prev)
+        return df.iloc[-1].to_dict(), df.iloc[-2].to_dict()
+    except Exception:
+        return {}, {}
 
 def create_dashboard():
-    # 1. Pega dados de ambas as fontes
-    local_data = get_data_local() 
-    yf_df = get_data_yf()
-    
-    # 2. Prepara dicionários Globais
-    global_current = {}
-    global_prev = {}
-    if not yf_df.empty:
-        global_current = yf_df.iloc[-1].to_dict()
-        global_prev = yf_df.iloc[-2].to_dict()
+    # 1. Coleta Dados
+    local_data = get_local_data()
+    global_curr, global_prev = get_global_data()
 
-    # Layout Dinâmico
-    display_items = [k for k in ASSETS_MAP.keys() if k != 'USD/BRL (Ref)']
-    total_plots = len(display_items) + 2 # +2 para Arbs
+    # 2. Configura Layout (Linhas e Colunas)
+    display_assets = [k for k in ASSETS_MAP.keys() if k not in ['Vale ADR', 'Petro ADR', 'USD/BRL']]
+    total_plots = len(display_assets) + 2 # +2 para os Arbs
     rows = (total_plots + 1) // 2
-    
+
     fig = make_subplots(
         rows=rows, cols=2,
         specs=[[{'type': 'indicator'}, {'type': 'indicator'}]] * rows,
-        vertical_spacing=0.03, horizontal_spacing=0.05
+        vertical_spacing=0.04, horizontal_spacing=0.05
     )
 
-    r, c = 1, 1
-    
-    # Cor: Verde (Alta) / Vermelho (Baixa)
+    # 3. Função de Cor (Verde/Vermelho)
     def get_color(val, ref):
         return "#00FF7F" if val >= ref else "#FF4040"
 
-    # --- LOOP DE ATIVOS ---
-    for label in display_items:
-        info = ASSETS_MAP[label]
-        
-        current_val = None
-        prev_val = None 
-        
-        # BUSCA DADOS
-        if info['type'] == 'local':
-            # Dados vindo do MT5 via JsonBin
-            # Formato esperado: {"WIN$N": {"price": 100, "prev": 99}, ...}
-            key = info['json_key']
-            data_item = local_data.get(key)
-            
-            if isinstance(data_item, dict):
-                current_val = data_item.get('price')
-                prev_val = data_item.get('prev')
-            elif isinstance(data_item, (int, float)):
-                # Fallback se vier só número
-                current_val = data_item
-                prev_val = data_item 
+    r, c = 1, 1
 
-        elif info['type'] == 'global':
-            ticker = info['ticker']
-            if ticker in global_current:
-                current_val = global_current[ticker]
-                prev_val = global_prev[ticker]
+    # --- LOOP DOS ATIVOS ---
+    for label in display_assets:
+        conf = ASSETS_MAP[label]
+        curr, prev = None, None
 
-        # PLOTAGEM
-        if current_val is not None:
-            reference = prev_val if prev_val else current_val
-            min_g = reference * 0.98
-            max_g = reference * 1.02
+        # Lógica de Extração
+        if conf['type'] == 'local':
+            key = conf['json_key']
+            item = local_data.get(key)
+            # Suporta formato {"price": 10, "prev": 9} ou direto 10
+            if isinstance(item, dict):
+                curr = item.get('price')
+                prev = item.get('prev')
+            elif isinstance(item, (int, float)):
+                curr = item
+                prev = item # Sem variação se não tiver histórico
+        
+        elif conf['type'] == 'global':
+            ticker = conf['ticker']
+            if ticker in global_curr:
+                curr = global_curr[ticker]
+                prev = global_prev.get(ticker, curr)
+
+        # Plotagem
+        if curr is not None:
+            ref = prev if prev else curr
+            min_g = ref * 0.98
+            max_g = ref * 1.02
             
             fig.add_trace(go.Indicator(
                 mode="gauge+number+delta",
-                value=current_val,
+                value=curr,
                 title={'text': label, 'font': {'size': 14, 'color': 'white'}},
-                delta={'reference': reference, 'relative': True, 'valueformat': ".2%"},
+                delta={'reference': ref, 'relative': True, 'valueformat': ".2%"},
                 gauge={
                     'axis': {'range': [min_g, max_g], 'tickcolor': 'white'},
-                    'bar': {'color': get_color(current_val, reference)},
+                    'bar': {'color': get_color(curr, ref)},
                     'bgcolor': "rgba(0,0,0,0)",
-                    'steps': [{'range': [min_g, reference], 'color': 'rgba(255,0,0,0.15)'},
-                              {'range': [reference, max_g], 'color': 'rgba(0,255,0,0.15)'}]
+                    'steps': [{'range': [min_g, ref], 'color': 'rgba(255,0,0,0.1)'},
+                              {'range': [ref, max_g], 'color': 'rgba(0,255,0,0.1)'}]
                 }
             ), row=r, col=c)
             
-            c+=1; 
-            if c>2: c=1; r+=1
+            c += 1
+            if c > 2: c=1; r+=1
 
-    # --- ARBITRAGEM ---
+    # --- CÁLCULO DE ARBITRAGEM ---
+    # Spread = ((ADR * USD) / Local - 1) * 100
     try:
-        usd = global_current.get('BRL=X')
+        usd = global_curr.get('BRL=X')
         
         # VALE
-        vale_adr = global_current.get('VALE')
-        vale_local_dict = local_data.get('VALE3') # Pegando do MT5
-        vale_local = vale_local_dict.get('price') if isinstance(vale_local_dict, dict) else vale_local_dict
-
-        if usd and vale_adr and vale_local:
-            spread = (((vale_adr * usd) / vale_local) - 1) * 100
+        adr_v = global_curr.get('VALE')
+        # Tenta pegar valor local (suporta dict ou float)
+        loc_v_raw = local_data.get('VALE3')
+        loc_v = loc_v_raw.get('price') if isinstance(loc_v_raw, dict) else loc_v_raw
+        
+        if usd and adr_v and loc_v:
+            spread = (((adr_v * usd) / loc_v) - 1) * 100
             fig.add_trace(go.Indicator(
                 mode="gauge+number", value=spread,
                 title={'text': "Arb VALE %", 'font': {'size': 14, 'color': 'cyan'}},
                 gauge={'axis': {'range': [-2, 2]}, 'bar': {'color': 'cyan'}, 'bgcolor': "rgba(0,0,0,0)"}
             ), row=r, col=c)
-            c+=1; 
-            if c>2: c=1; r+=1
+            c += 1
+            if c > 2: c=1; r+=1
 
         # PETRO (PBR / 2 vs PETR4)
-        petro_adr = global_current.get('PBR')
-        petro_local_dict = local_data.get('PETR4')
-        petro_local = petro_local_dict.get('price') if isinstance(petro_local_dict, dict) else petro_local_dict
-        
-        if usd and petro_adr and petro_local:
-            spread = ((((petro_adr/2) * usd) / petro_local) - 1) * 100
+        adr_p = global_curr.get('PBR')
+        loc_p_raw = local_data.get('PETR4')
+        loc_p = loc_p_raw.get('price') if isinstance(loc_p_raw, dict) else loc_p_raw
+
+        if usd and adr_p and loc_p:
+            spread = ((((adr_p/2) * usd) / loc_p) - 1) * 100
             fig.add_trace(go.Indicator(
                 mode="gauge+number", value=spread,
                 title={'text': "Arb PETRO %", 'font': {'size': 14, 'color': 'cyan'}},
@@ -184,7 +173,8 @@ def create_dashboard():
 
     fig.update_layout(
         paper_bgcolor='black', font={'color': 'white', 'family': 'Arial'},
-        margin=dict(l=20, r=20, t=40, b=20),
-        height=rows*150, title="<b>Intelligence Flow (M5)</b>"
+        margin=dict(l=20, r=20, t=30, b=20),
+        height=rows*150,
+        title="<b>Intelligence Flow (M5)</b>"
     )
     return fig
