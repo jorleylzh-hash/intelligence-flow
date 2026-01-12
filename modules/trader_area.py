@@ -1,121 +1,86 @@
+import streamlit as st
 import time
-import random # Apenas para simulação, substitua pelas suas APIs
-import streamlit as st # Assumindo Streamlit pela estrutura
-import plotly.graph_objects as go # Para gráficos fluidos
+import plotly.graph_objects as go
+from modules import data_feed
 
-# --- 1. FUNÇÕES DE CÁLCULO (O Cérebro) ---
-def calcular_metricas_trader(ativo, preco_atual):
-    # Simulação de Bid/Ask para calcular Spread
-    bid = preco_atual - random.uniform(0.0, 1.0)
-    ask = preco_atual + random.uniform(0.0, 1.0)
-    
-    # 1. CÁLCULO DO SPREAD (Pedido do User)
-    spread = ask - bid
-    
-    # 2. SENTIMENTO RISK ON/OFF (Simulado)
-    # Lógica: Se S&P sobe e Juros caem = Risk On
-    fator_macro = random.random()
-    risk_sentiment = "RISK ON 🟢" if fator_macro > 0.4 else "RISK OFF 🔴"
-    
-    # 3. MENSAGEM CRÍTICA DA IA (Dinâmica por ativo)
-    msgs = {
-        'WDO': f"IA: Fluxo vendedor absorvendo compras em {preco_atual}. Spread de {spread:.1f}pts indica liquidez média.",
-        'WIN': f"IA: Estrutura de alta confirmada acima da VWAP. Alvo técnico projetado em +500pts.",
-        'DXY': f"IA: Dólar global ganhando tração. Cuidado com vendas em WDO.",
-    }
-    msg_ia = msgs.get(ativo, "IA: Analisando fluxo e correlações...")
+# Lista de ativos (pode ajustar conforme seus contratos)
+ATIVOS_PADRAO = ["WDO$N", "WIN$N", "PETR4", "VALE3"]
 
-    return {
-        "preco": preco_atual,
-        "bid": bid,
-        "ask": ask,
-        "spread": spread,
-        "risk": risk_sentiment,
-        "msg_ia": msg_ia,
-        "irr": random.randint(30, 80) # Seu IRR(9)
-    }
-
-# --- 2. A INTERFACE (Sem Piscar) ---
 def render_trader_area():
-    # A. CONFIGURAÇÃO INICIAL (Roda apenas uma vez)
-    st.markdown("## ⚡ Intelligence Flow | Trader Workstation")
+    st.markdown("## ⚡ Intelligence Flow | Nuvem Conectada")
+
+    # --- CONFIGURAÇÃO DA PONTE (SIDEBAR) ---
+    st.sidebar.header("📡 Conexão Remota")
     
-    # Top Bar Fixa
-    col_top1, col_top2 = st.columns([3, 1])
-    with col_top1:
-        ativo_selecionado = st.selectbox("Ativo Monitorado", ["WDO", "WIN", "DXY", "SPX"])
-    with col_top2:
-        # Placeholder para o Risk Sentiment (Para não piscar a barra toda)
-        risk_placeholder = st.empty()
+    # O CAMPO MÁGICO ONDE VOCÊ COLA O LINK
+    url_ngrok = st.sidebar.text_input(
+        "Link do Ngrok (Ponte):", 
+        placeholder="https://...ngrok-free.dev",
+        help="https://unlisted-bailee-biyearly.ngrok-free.dev"
+    )
 
-    # Área da Mensagem da IA
-    st.markdown("---")
-    ai_msg_placeholder = st.empty() # Placeholder da IA
+    if url_ngrok:
+        st.sidebar.success("Conectado à Ponte! 🟢")
+    else:
+        st.sidebar.warning("Cole o link para ver dados reais.")
+
     st.markdown("---")
 
-    # Layout Principal
-    col1, col2, col3 = st.columns([1, 3, 1])
+    # --- SELEÇÃO DO ATIVO ---
+    ativo_atual = st.selectbox("Ativo Operacional", ATIVOS_PADRAO)
+
+    # --- LAYOUT VISUAL ---
+    col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.markdown("### Dados")
-        # Placeholders para dados numéricos
+        st.markdown("### Cotação")
+        metric_placeholder = st.empty()
         spread_placeholder = st.empty()
-        irr_placeholder = st.empty()
-        
+
     with col2:
-        st.markdown("### Gráfico Operacional")
-        chart_placeholder = st.empty() # O gráfico vai aqui dentro
+        st.markdown("### Gráfico Intraday")
+        chart_placeholder = st.empty()
 
-    with col3:
-        st.markdown("### SMC / HME")
-        smc_placeholder = st.empty()
-
-    # B. LOOP DE ATUALIZAÇÃO (Aqui acontece a mágica fluida)
-    # O segredo é atualizar APENAS os placeholders, não a página toda.
-    preco_mock = 5000.0
-    
+    # --- LOOP DE DADOS ---
     while True:
-        # Atualiza dados simulados
-        preco_mock += random.uniform(-5, 5)
-        dados = calcular_metricas_trader(ativo_selecionado, preco_mock)
-        
-        # 1. Atualiza Risk On/Off
-        risk_placeholder.markdown(f"### {dados['risk']}")
-        
-        # 2. Atualiza Msg IA (Crítica)
-        ai_msg_placeholder.info(f"🤖 **ANÁLISE:** {dados['msg_ia']}")
-        
-        # 3. Atualiza Spread e IRR (Lateral)
-        # Cor condicional para o Spread
-        cor_spread = "red" if dados['spread'] > 1.5 else "green"
-        spread_placeholder.markdown(
-            f"""
-            **Spread:** :{cor_spread}[{dados['spread']:.1f} pts]  
-            Ask: {dados['ask']:.1f}  
-            Bid: {dados['bid']:.1f}
-            """
-        )
-        irr_placeholder.metric("IRR (9)", f"{dados['irr']}", delta_color="normal")
-        
-        # 4. Atualiza Gráfico (Plotly é mais fluido que Matplotlib)
-        fig = go.Figure(go.Indicator(
-            mode = "number+delta",
-            value = dados['preco'],
-            delta = {'position': "top", 'reference': 5000},
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': f"Preço {ativo_selecionado}"}
-        ))
-        fig.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=20))
-        chart_placeholder.plotly_chart(fig, use_container_width=True)
+        # Busca dados passando a URL que você digitou
+        dados_dict = data_feed.get_data_hibrido([ativo_atual], url_ponte=url_ngrok)
+        dado = dados_dict.get(ativo_atual)
 
-        # 5. SMC
-        smc_placeholder.markdown(
-            f"""
-            - **OB Bear:** 5025.0
-            - **FVG:** 5010.0
-            - **OB Bull:** 4980.0
-            """
-        )
+        if dado and dado['preco'] > 0:
+            # 1. Atualiza Preço
+            metric_placeholder.metric(
+                label=f"{ativo_atual}",
+                value=f"{dado['preco']:.2f}",
+                delta=f"Vol: {dado.get('volume',0)}"
+            )
+            
+            # 2. Atualiza Spread/Origem
+            cor_spread = "green" if dado['spread'] <= 1.0 else "red"
+            spread_placeholder.markdown(
+                f"""
+                **Fonte:** {dado['origem']}  
+                **Spread:** :{cor_spread}[{dado['spread']:.1f} pts]  
+                Bid: {dado['bid']} | Ask: {dado['ask']}
+                """
+            )
 
-        # Controle de Frame Rate (evita processamento excessivo)
-        time.sleep(0.5)
+            # 3. Atualiza Gráfico
+            fig = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = dado['preco'],
+                title = {'text': "Fluxo Real Time"},
+                gauge = {
+                    'axis': {'range': [dado['bid']-5, dado['ask']+5]},
+                    'bar': {'color': "#66fcf1"},
+                    'bgcolor': "#0e1117"
+                }
+            ))
+            fig.update_layout(height=250, margin=dict(t=30, b=20, l=20, r=20), paper_bgcolor="#0e1117", font={'color': "white"})
+            chart_placeholder.plotly_chart(fig, use_container_width=True)
+
+        else:
+            metric_placeholder.error("Sem sinal...")
+            spread_placeholder.info("Verifique se o Link está correto e o MT5 aberto.")
+
+        time.sleep(1)
