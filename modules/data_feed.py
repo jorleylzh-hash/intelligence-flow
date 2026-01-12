@@ -92,11 +92,27 @@ def get_tickers_config():
         "BBD_ADR":  {"source": "YF", "symbol": "BBD"},
     }
 
-# --- MOTOR DE COLETA ---
+# modules/data_feed.py
+
+# ... imports ...
+
+# ---------------------------------------------------------
+# COLE O CAMINHO AQUI (Mantenha o 'r' antes das aspas)
+# Exemplo: r"C:\Program Files\XP MetaTrader 5\terminal64.exe"
+CAMINHO_MT5 = r"C:\Program Files\MetaTrader 5\terminal64.exe" 
+# ---------------------------------------------------------
+
 def conectar_mt5():
+    # Tenta conectar no terminal que já estiver aberto
     if not mt5.initialize():
-        print(f"❌ MT5 Erro: {mt5.last_error()}")
-        return False
+        print("Tentando abrir pelo caminho específico...")
+        
+        # Se falhar, força a abertura do executável específico da corretora
+        if not mt5.initialize(path=CAMINHO_MT5):
+            print(f"❌ ERRO CRÍTICO MT5: {mt5.last_error()}")
+            return False
+            
+    # print("✅ Conectado ao MT5 com sucesso!")
     return True
 
 def get_data_hibrido(lista_ativos):
