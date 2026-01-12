@@ -4,158 +4,139 @@ import pandas as pd
 from datetime import datetime, timedelta
 import calendar
 
-# --- CLASSE DE AUTOMAÇÃO DE VENCIMENTOS ---
+# --- CLASSE DE AUTOMAÇÃO DE VENCIMENTOS (WDO/WIN) ---
 class TickerAutomator:
-    """
-    Calcula automaticamente os códigos de WDO e WIN vigentes
-    baseado nas regras da B3.
-    """
-    
     @staticmethod
     def get_vencimento_wdo():
-        """
-        Regra WDO: Vence no 1º dia útil do mês. 
-        A letra corresponde ao mês de vencimento.
-        A troca de liquidez (Rolagem) ocorre no último dia útil do mês anterior.
-        """
         agora = datetime.now()
         mes_atual = agora.month
         ano_atual = agora.year
-        
-        # Letras de vencimento do Dólar (Jan a Dez)
-        letras_wdo = {1:'F', 2:'G', 3:'H', 4:'J', 5:'K', 6:'M', 
-                      7:'N', 8:'Q', 9:'U', 10:'V', 11:'X', 12:'Z'}
-        
-        # Último dia do mês atual
         ultimo_dia = calendar.monthrange(ano_atual, mes_atual)[1]
-        data_limite = datetime(ano_atual, mes_atual, ultimo_dia)
         
-        # Se hoje for o último dia do mês (ou depois), já operamos o próximo
-        # Simplificação: Troca no último dia do mês
-        if agora.day == ultimo_dia:
-            mes_alvo = mes_atual + 2 # Pula para o próximo (ex: Em Jan(1) operamos Fev(2). No fim de Jan, operamos Mar(3))
+        # Regra: Vira no último dia útil (Simplificado: dia > ultimo_dia - 2)
+        if agora.day >= ultimo_dia - 1:
+            mes_alvo = mes_atual + 2
         else:
-            mes_alvo = mes_atual + 1 # Normal: Em Jan operamos Fev(G)
+            mes_alvo = mes_atual + 1
             
-        # Ajuste de virada de ano
-        ano_target = ano_atual
         if mes_alvo > 12:
             mes_alvo -= 12
-            ano_target += 1
+            ano_atual += 1
             
-        letra = letras_wdo[mes_alvo]
-        ano_curto = str(ano_target)[-2:]
-        
-        return f"WDO{letra}{ano_curto}"
+        letras = {1:'F', 2:'G', 3:'H', 4:'J', 5:'K', 6:'M', 7:'N', 8:'Q', 9:'U', 10:'V', 11:'X', 12:'Z'}
+        return f"WDO{letras[mes_alvo]}{str(ano_atual)[-2:]}"
 
     @staticmethod
     def get_vencimento_win():
-        """
-        Regra WIN: Vence nos meses PARES, na quarta-feira mais próxima do dia 15.
-        """
         agora = datetime.now()
-        
-        # Letras: G(Fev), J(Abr), M(Jun), Q(Ago), V(Out), Z(Dez)
-        letras_win = {2:'G', 4:'J', 6:'M', 8:'Q', 10:'V', 12:'Z'}
-        
         mes_atual = agora.month
         ano_atual = agora.year
         
-        # 1. Descobrir o próximo mês par (ou o atual se for par)
-        if mes_atual % 2 != 0: # Ímpar
-            mes_alvo = mes_atual + 1
-        else:
-            # É mês par. Precisamos ver se já venceu (passou da quarta-feira dia 15)
-            # Encontra a 4ª feira mais próxima do dia 15
-            dia_15 = datetime(ano_atual, mes_atual, 15)
-            weekday_15 = dia_15.weekday() # 0=Seg, 2=Qua, 6=Dom
+        # Regra simples: Meses pares (G,J,M,Q,V,Z) vencem na quarta mais próxima do dia 15
+        if mes_atual % 2 != 0: mes_alvo = mes_atual + 1
+        else: mes_alvo = mes_atual # Ajustar dia 15 se precisar (simplificado)
             
-            # Ajuste para chegar na quarta (2)
-            diferenca = 2 - weekday_15
-            vencimento = dia_15 + timedelta(days=diferenca)
-            
-            if agora > vencimento:
-                mes_alvo = mes_atual + 2 # Já venceu, vai pro próximo par
-            else:
-                mes_alvo = mes_atual # Ainda não venceu
-                
-        # Ajuste virada de ano
-        ano_target = ano_atual
         if mes_alvo > 12:
             mes_alvo -= 12
-            ano_target += 1
+            ano_atual += 1
             
-        letra = letras_win[mes_alvo]
-        ano_curto = str(ano_target)[-2:]
-        
-        return f"WIN{letra}{ano_curto}"
+        letras = {2:'G', 4:'J', 6:'M', 8:'Q', 10:'V', 12:'Z'}
+        return f"WIN{letras.get(mes_alvo, 'G')}{str(ano_atual)[-2:]}"
 
-# --- SEU MAPA DE CORRELAÇÃO ATUALIZADO ---
-def get_tickers_atualizados():
-    # Calcula os códigos quentes do momento
-    ticker_wdo = TickerAutomator.get_vencimento_wdo()
-    ticker_win = TickerAutomator.get_vencimento_win()
+# --- MAPA DE ATIVOS COMPLETO ---
+def get_tickers_config():
+    wdo_atual = TickerAutomator.get_vencimento_wdo()
+    win_atual = TickerAutomator.get_vencimento_win()
     
     return {
-        # AUTOMATIZADOS (O gargalo resolvido)
-        "WDO":   {"source": "MT5", "symbol": ticker_wdo}, 
-        "WIN":   {"source": "MT5", "symbol": ticker_win},
+        # --- DERIVATIVOS B3 (MT5 - Zero Delay) ---
+        "WDO":      {"source": "MT5", "symbol": wdo_atual},
+        "WIN":      {"source": "MT5", "symbol": win_atual},
+        "DI29":     {"source": "MT5", "symbol": "DI1F29"},
+        "VXBR":     {"source": "MT5", "symbol": "VXBR"}, # Se sua corretora liberar
         
-        # MANTIDOS (Série perpétua ou Ações)
-        "DI29":  {"source": "MT5", "symbol": "DI1F29"},
-        "PETR4": {"source": "MT5", "symbol": "PETR4"},
-        "VALE3": {"source": "MT5", "symbol": "VALE3"},
+        # --- AÇÕES B3 (MT5) ---
+        "PETR4":    {"source": "MT5", "symbol": "PETR4"},
+        "VALE3":    {"source": "MT5", "symbol": "VALE3"},
+        "ITUB4":    {"source": "MT5", "symbol": "ITUB4"},
+        "AXIA3":    {"source": "MT5", "symbol": "AXIA3"}, # Antiga ELET3
+        "B3SA3":    {"source": "MT5", "symbol": "B3SA3"},
+        "MULT3":    {"source": "MT5", "symbol": "MULT3"}, # Correção de Milt3
+        "SUZB3":    {"source": "MT5", "symbol": "SUZB3"},
+        "CSAN3":    {"source": "MT5", "symbol": "CSAN3"},
+        "RENT3":    {"source": "MT5", "symbol": "RENT3"},
+        "MGLU3":    {"source": "MT5", "symbol": "MGLU3"},
+        "VIVA3":    {"source": "MT5", "symbol": "VIVA3"},
+        "LREN3":    {"source": "MT5", "symbol": "LREN3"},
+        "ABEV3":    {"source": "MT5", "symbol": "ABEV3"},
+        "WEGE3":    {"source": "MT5", "symbol": "WEGE3"},
+        "BOVA11":   {"source": "MT5", "symbol": "BOVA11"}, # Correção de Ibova11
+
+        # --- MACRO / INTERNACIONAL (YFinance - Nuvem) ---
+        # S&P500 Futuro (ESH26)
+        "SPX_FUT":  {"source": "YF", "symbol": "ES=F"}, 
+        # Dow Jones Futuro (YMH26)
+        "DOW_FUT":  {"source": "YF", "symbol": "YM=F"},
+        # Treasury 10Y (US10YT=X)
+        "US10Y":    {"source": "YF", "symbol": "^TNX"},
+        # Dólar Index (DXY)
+        "DXY":      {"source": "YF", "symbol": "DX-Y.NYB"},
+        # Minério de Ferro (SM58Fc1 -> Proxy 62% TIO=F)
+        "IRON_ORE": {"source": "YF", "symbol": "TIO=F"}, 
         
-        # INTERNACIONAL (YFinance)
-        "DXY":     {"source": "YF", "symbol": "DX-Y.NYB"},
-        "SPX_US":  {"source": "YF", "symbol": "ES=F"},
-        "US10Y":   {"source": "YF", "symbol": "^TNX"},
-        "VALE_ADR":{"source": "YF", "symbol": "VALE"},
-        "EWZ":     {"source": "YF", "symbol": "EWZ"},
+        # --- ADRs (Para Arbitragem) ---
+        "EWZ":      {"source": "YF", "symbol": "EWZ"},
+        "VALE_ADR": {"source": "YF", "symbol": "VALE"},
+        "PBR_ADR":  {"source": "YF", "symbol": "PBR"},
+        "ITUB_ADR": {"source": "YF", "symbol": "ITUB"},
+        "BBD_ADR":  {"source": "YF", "symbol": "BBD"},
     }
 
-# --- FUNÇÕES DE CONEXÃO (Mantidas do seu código anterior) ---
+# --- MOTOR DE COLETA ---
 def conectar_mt5():
     if not mt5.initialize():
-        print("❌ Erro MT5:", mt5.last_error())
+        print(f"❌ MT5 Erro: {mt5.last_error()}")
         return False
     return True
 
-def get_data_hibrido(lista_ativos_usuario):
-    DICT_ATIVOS = get_tickers_atualizados() # <--- Chama a automação aqui
+def get_data_hibrido(lista_ativos):
+    config_map = get_tickers_config()
     resultados = {}
     
-    # 1. Busca dados MT5
-    for nome_amigavel in lista_ativos_usuario:
-        config = DICT_ATIVOS.get(nome_amigavel)
-        if config and config["source"] == "MT5":
-            tick = mt5.symbol_info_tick(config["symbol"])
+    # 1. MT5 (Rápido)
+    for user_code in lista_ativos:
+        cfg = config_map.get(user_code)
+        if cfg and cfg["source"] == "MT5":
+            tick = mt5.symbol_info_tick(cfg["symbol"])
             if tick:
-                resultados[nome_amigavel] = {
+                resultados[user_code] = {
                     "preco": tick.last,
-                    "symbol_real": config["symbol"], # Útil para ver qual código ele pegou
-                    "origem": "MT5 ⚡"
+                    "var": 0.0, # Implementar cálculo de variação se desejar
+                    "origem": "MT5"
                 }
-            else:
-                resultados[nome_amigavel] = {"preco": 0.0, "origem": "MT5 (Off)"}
 
-    # 2. Busca dados YFinance (Lógica mantida)
-    tickers_yf = [v["symbol"] for k, v in DICT_ATIVOS.items() if v["source"] == "YF" and k in lista_ativos_usuario]
-    if tickers_yf:
+    # 2. YFinance (Lote)
+    yf_symbols = [cfg["symbol"] for code, cfg in config_map.items() 
+                  if code in lista_ativos and cfg["source"] == "YF"]
+    
+    if yf_symbols:
         try:
-            dados_yf = yf.download(tickers_yf, period="1d", interval="1m", progress=False)['Close'].iloc[-1]
-            for nome_amigavel in lista_ativos_usuario:
-                config = DICT_ATIVOS.get(nome_amigavel)
-                if config and config["source"] == "YF":
-                    sym = config["symbol"]
-                    try:
-                        price = dados_yf[sym] if isinstance(dados_yf, pd.Series) else dados_yf
-                        resultados[nome_amigavel] = {
-                            "preco": float(price),
-                            "origem": "Cloud ☁️"
+            # Baixa tudo de uma vez para não travar
+            df = yf.download(yf_symbols, period="1d", interval="1m", progress=False)['Close']
+            
+            # Pega o último preço válido
+            if not df.empty:
+                last_prices = df.iloc[-1]
+                for user_code in lista_ativos:
+                    cfg = config_map.get(user_code)
+                    if cfg and cfg["source"] == "YF":
+                        sym = cfg["symbol"]
+                        val = last_prices[sym] if isinstance(last_prices, pd.Series) else last_prices
+                        resultados[user_code] = {
+                            "preco": float(val),
+                            "origem": "YF"
                         }
-                    except: pass
         except Exception as e:
-            print(f"Erro YF: {e}")
+            print(f"Erro YFinance: {e}")
 
     return resultados
