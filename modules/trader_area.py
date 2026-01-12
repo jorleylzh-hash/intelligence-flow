@@ -8,7 +8,6 @@ ATIVOS_PADRAO = ["WDO$N", "WIN$N", "PETR4", "VALE3"]
 def render_trader_area():
     st.markdown("## ⚡ Intelligence Flow | Live")
 
-    # Status discreto na barra lateral
     st.sidebar.markdown("### Status da Rede")
     st.sidebar.info("🔗 Sincronização Automática Ativa")
 
@@ -22,7 +21,6 @@ def render_trader_area():
         chart_placeholder = st.empty()
 
     while True:
-        # Busca dados (o data_feed se vira pra achar a URL)
         dados_dict = data_feed.get_data_hibrido([ativo_atual])
         dado = dados_dict.get(ativo_atual)
 
@@ -31,10 +29,21 @@ def render_trader_area():
             
             fig = go.Figure(go.Indicator(
                 mode = "gauge+number", value = dado['preco'],
-                gauge = {'axis': {'range': [dado['bid']-5, dado['ask']+5]}, 'bar': {'color': "#66fcf1"}},
+                gauge = {
+                    'axis': {'range': [dado['bid']-5, dado['ask']+5]}, 
+                    'bar': {'color': "#66fcf1"}
+                }
             ))
             fig.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20))
-            chart_placeholder.plotly_chart(fig, use_container_width=True)
+            
+            # --- A CORREÇÃO ESTÁ AQUI EMBAIXO ---
+            # Adicionamos key=f"{time.time()}" para garantir que cada gráfico seja único
+            chart_placeholder.plotly_chart(
+                fig, 
+                use_container_width=True, 
+                key=f"chart_{time.time()}"
+            )
+            
         else:
             metric_placeholder.warning("Sincronizando...")
             
