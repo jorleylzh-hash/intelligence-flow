@@ -1,13 +1,5 @@
-streamlit
+dash
 pandas
-numpy
-requests
-plotly
-streamlit-authenticator
-resend
-google-generativeai>=0.7.0
 yfinance
-pyngrok
-nest_asyncio
-fastapi
-uvicorn
+plotly
+gunicorn
