@@ -6,5 +6,7 @@ plotly
 streamlit-authenticator
 resend
 google-generativeai>=0.7.0
-MetaTrader5
 yfinance
+pyngrok
+fastapi
+
