@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence Flow - Trader Dashboard Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: #1f2833;
+            --text-color: #c5c6c7;
+            --accent-cyan: #66fcf1;
+            --accent-dark-cyan: #45a29e;
+            --bullish: #00e676;
+            --bearish: #ff1744;
+            --warning: #ffea00;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden; /* Evita scroll desnecessário */
+        }
+
+        /* --- Header & Top Bar --- */
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-bottom: 2px solid var(--accent-dark-cyan);
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .risk-meter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            background: #111;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid #444;
+        }
+
+        .risk-status {
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .risk-on { color: #000; background-color: var(--bullish); }
+        .risk-off { color: #fff; background-color: var(--bearish); }
+
+        /* --- Sidebar Controls --- */
+        aside {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            background-color: #0b0c10;
+            border: 1px solid var(--accent-dark-cyan);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: var(--accent-dark-cyan);
+        }
+
+        /* --- Main Dashboard Area --- */
+        main {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto 1fr;
+            gap: 15px;
+            overflow-y: auto; /* Permite scroll apenas no conteúdo se necessário */
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            font-size: 1rem;
+            color: var(--accent-cyan);
+        }
+
+        /* AI Analysis Box (Full Width) */
+        .ai-analysis-box {
+            grid-column: 1 / -1;
+            background: linear-gradient(90deg, #1f2833 0%, #13181f 100%);
+            border-left: 4px solid var(--accent-cyan);
+        }
+
+        .ai-content {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .highlight { color: var(--warning); font-weight: bold; }
+
+        /* Data Displays */
+        .data-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .spread-calc {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: -5px;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        /* Specific Colors */
+        .green { color: var(--bullish); }
+        .red { color: var(--bearish); }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <span>⚡</span> Intelligence Flow <small>| Trader Workstation</small>
+        </div>
+        
+        <div class="risk-meter">
+            <span>Sentimento Macro:</span>
+            <span id="risk-display" class="risk-status risk-on">RISK ON</span>
+        </div>
+        
+        <div style="font-size: 0.9rem;">
+            <span>Conexão: </span> <span class="green">● Estável (12ms)</span>
+        </div>
+    </header>
+
+    <aside>
+        <div>
+            <label for="asset-select">ATIVO MONITORADO</label>
+            <select id="asset-select" onchange="updateAssetContext()">
+                <option value="WDO">WDO (Dólar Futuro)</option>
+                <option value="WIN">WIN (Índice Futuro)</option>
+                <option value="DXY">DXY (Dólar Index)</option>
+                <option value="SPX">S&P 500</option>
+                <option value="VALE3">Vale (VALE3)</option>
+                <option value="PETR4">Petrobras (PETR4)</option>
+            </select>
+        </div>
+
+        <div class="card" style="background: #111;">
+            <h3>Monitor de Spread</h3>
+            <div id="spread-value" class="data-value warning">0.5 pts</div>
+            <div class="spread-calc">Fórmula: (Ask - Bid)</div>
+            <div style="margin-top:10px; font-size: 0.8rem;">
+                Ask: <span id="ask-price">5001.0</span><br>
+                Bid: <span id="bid-price">5000.5</span>
+            </div>
+        </div>
+
+        <div>
+            <label>FILTRO DE TEMPO</label>
+            <select>
+                <option>M5 (Intraday)</option>
+                <option>M15 (Curto Prazo)</option>
+                <option>H1 (Tendência)</option>
+            </select>
+        </div>
+        
+        <button onclick="alert('Ordem de teste enviada!')">ZERAR POSIÇÃO</button>
+    </aside>
+
+    <main>
+        <div class="card ai-analysis-box">
+            <h3>🤖 Intelligence Flow AI - Análise Crítica (<span id="ai-asset-name">WDO</span>)</h3>
+            <div class="ai-content" id="ai-text">
+                Carregando análise neural...
+            </div>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+            <h3>Price Action & VWAP Bands</h3>
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Volume Financeiro</h3>
+            <div class="chart-container">
+                <canvas id="volumeChart"></canvas>
+            </div>
+            <div style="text-align: center; margin-top: 10px;">
+                Saldo: <span id="delta-volume" class="green">+1.2B</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>IRR (9) - Força Relativa</h3>
+            <div class="data-value" id="irr-value">62.4</div>
+            <div style="height: 10px; background: #333; border-radius: 5px; overflow: hidden;">
+                <div id="irr-bar" style="width: 62%; height: 100%; background: var(--accent-cyan);"></div>
+            </div>
+            <small>Zona de Sobrecompra: > 70 | Sobrevenda: < 30</small>
+        </div>
+
+        <div class="card">
+            <h3>US 10Y Yield (Juros)</h3>
+            <div class="data-value" id="us10y-value">4.02%</div>
+            <small id="us10y-change" class="red">▲ +0.05% (Pressão Vendedora em Risco)</small>
+        </div>
+
+        <div class="card">
+            <h3>Zonas SMC (HME)</h3>
+            <ul style="list-style: none; padding: 0; font-size: 0.9rem;">
+                <li style="margin-bottom: 5px;">OB Bearish: <span class="red">5025.0 - 5030.0</span></li>
+                <li style="margin-bottom: 5px;">FVG (Gap): <span class="warning">5010.5</span></li>
+                <li>OB Bullish: <span class="green">4980.0 - 4985.0</span></li>
+            </ul>
+        </div>
+    </main>
+
+    <script>
+        // --- 1. Configuração dos Gráficos (Chart.js) ---
+        // Criamos as instâncias fora do loop para não recriar (evita piscar)
+        
+        const ctxPrice = document.getElementById('priceChart').getContext('2d');
+        const priceChart = new Chart(ctxPrice, {
+            type: 'line',
+            data: {
+                labels: Array(20).fill(''),
+                datasets: [{
+                    label: 'Preço',
+                    data: Array(20).fill(5000),
+                    borderColor: '#66fcf1',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 0
+                }, {
+                    label: 'VWAP',
+                    data: Array(20).fill(5005),
+                    borderColor: '#ffea00',
+                    borderDash: [5, 5],
+                    borderWidth: 1,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 }, // Importante para performance em updates rápidos
+                plugins: { legend: { display: true, labels: { color: '#ccc' } } },
+                scales: {
+                    y: { grid: { color: '#333' }, ticks: { color: '#888' } },
+                    x: { display: false }
+                }
+            }
+        });
+
+        const ctxVol = document.getElementById('volumeChart').getContext('2d');
+        const volumeChart = new Chart(ctxVol, {
+            type: 'bar',
+            data: {
+                labels: Array(10).fill(''),
+                datasets: [{
+                    label: 'Vol Compra',
+                    data: Array(10).fill(50),
+                    backgroundColor: '#00e676'
+                }, {
+                    label: 'Vol Venda',
+                    data: Array(10).fill(40),
+                    backgroundColor: '#ff1744'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { display: false },
+                    x: { display: false }
+                }
+            }
+        });
+
+        // --- 2. Lógica da IA e Contexto (UpdateAssetContext) ---
+        const aiAnalyses = {
+            'WDO': "DETECTADO: Fluxo Institucional Vendedor na região da VWAP (5015). <span class='highlight'>DXY em alta</span> pressiona Real. Zonas de Liquidez capturadas em 4990. Sugestão: Buscar vendas em repiques até a banda superior da VWAP. Atenção ao Payroll às 10:30.",
+            'WIN': "DETECTADO: Estrutura de Alta (Higher Highs) no M5. <span class='highlight'>Petrobras e Vale</span> dando suporte ao índice. Alvo técnico em 132.000 (Order Block H1). Cuidado com exaustão de compra no IRR(9).",
+            'DXY': "CONTEXTO GLOBAL: Dólar ganhando força contra pares principais. Yields americanos subindo. Isso gera <span class='highlight'>Aversão a Risco (Risk Off)</span> em emergentes. Suporte forte em 102.500.",
+            'SPX': "MERCADO AMERICANO: Testando topo histórico. Volume decrescente sugere possível armadilha (Bull Trap). Monitorar juros de 10 anos. Se romper 4800 com volume, invalida cenário baixista.",
+            'VALE3': "COMMODITIES: Minério de ferro em queda na China (Dalian). Ação operando abaixo da VWAP Mensal. Pressão vendedora forte de estrangeiros. Suporte crítico em R$ 68,50.",
+            'PETR4': "ENERGIA: Petróleo Brent subindo +2%. Papel descolado do índice, servindo de hedge. <span class='highlight'>Fluxo comprador</span> agressivo no leilão de abertura."
+        };
+
+        function updateAssetContext() {
+            const asset = document.getElementById('asset-select').value;
+            document.getElementById('ai-asset-name').innerText = asset;
+            
+            // Simula um "pensamento" da IA antes de mostrar
+            document.getElementById('ai-text').innerHTML = "<i>Processando dados do Book, Times & Trades e Macro...</i>";
+            
+            setTimeout(() => {
+                document.getElementById('ai-text').innerHTML = aiAnalyses[asset] || "Aguardando dados suficientes para análise crítica...";
+            }, 600); // Pequeno delay para sensação de processamento
+        }
+
+        // --- 3. Atualização de Dados em Tempo Real (Sem piscar) ---
+        function updateDashboard() {
+            // A. Gerar dados aleatórios para simulação
+            const randomPrice = 5000 + (Math.random() * 20 - 10);
+            const vwap = 5002;
+            
+            // B. Atualizar Gráficos (Push & Shift)
+            // Preço
+            priceChart.data.datasets[0].data.push(randomPrice);
+            priceChart.data.datasets[0].data.shift();
+            priceChart.data.datasets[1].data.push(vwap + (Math.random() * 2)); // VWAP variação leve
+            priceChart.data.datasets[1].data.shift();
+            priceChart.update();
+
+            // Volume
+            volumeChart.data.datasets[0].data.push(Math.random() * 100);
+            volumeChart.data.datasets[0].data.shift();
+            volumeChart.data.datasets[1].data.push(Math.random() * 100);
+            volumeChart.data.datasets[1].data.shift();
+            volumeChart.update();
+
+            // C. Atualizar Spread (Lógica Matemática)
+            const bid = parseFloat((randomPrice - 0.5).toFixed(1));
+            const ask = parseFloat((randomPrice + 0.5 + (Math.random() > 0.8 ? 0.5 : 0)).toFixed(1)); // Spread varia as vezes
+            const spread = (ask - bid).toFixed(1);
+
+            document.getElementById('bid-price').innerText = bid;
+            document.getElementById('ask-price').innerText = ask;
+            const spreadEl = document.getElementById('spread-value');
+            spreadEl.innerText = spread + " pts";
+            
+            // Cor do spread muda se ficar caro
+            if(spread > 1.0) {
+                spreadEl.style.color = 'var(--bearish)';
+            } else {
+                spreadEl.style.color = 'var(--text-color)';
+            }
+
+            // D. Atualizar IRR (Simples)
+            const irr = Math.floor(Math.random() * 100);
+            document.getElementById('irr-value').innerText = irr;
+            document.getElementById('irr-bar').style.width = irr + "%";
+            if (irr > 70) document.getElementById('irr-bar').style.backgroundColor = 'var(--bearish)'; // Sobrecompra
+            else if (irr < 30) document.getElementById('irr-bar').style.backgroundColor = 'var(--bullish)'; // Sobrevenda
+            else document.getElementById('irr-bar').style.backgroundColor = 'var(--accent-cyan)';
+
+            // E. Atualizar Risk On/Off (Simulação Aleatória Lenta)
+            // Apenas para demo, num app real viria de API
+            if(Math.random() > 0.95) {
+                const riskEl = document.getElementById('risk-display');
+                if(riskEl.classList.contains('risk-on')) {
+                    riskEl.className = 'risk-status risk-off';
+                    riskEl.innerText = 'RISK OFF';
+                } else {
+                    riskEl.className = 'risk-status risk-on';
+                    riskEl.innerText = 'RISK ON';
+                }
+            }
+        }
+
+        // Inicialização
+        updateAssetContext(); // Carrega texto inicial
+        // Substitua a função antiga por esta:
+async function updateDashboard() {
+    try {
+        // Chama o Python (Rota /api/dados)
+        const response = await fetch('/api/dados');
+        const data = await response.json();
+
+        // 1. Atualiza Preço e Gráfico
+        priceChart.data.datasets[0].data.push(data.preco);
+        priceChart.data.datasets[0].data.shift();
+        priceChart.data.datasets[1].data.push(data.vwap);
+        priceChart.data.datasets[1].data.shift();
+        priceChart.update();
+
+        // 2. Atualiza Spread
+        const spreadEl = document.getElementById('spread-value');
+        spreadEl.innerText = data.spread + " pts";
+        spreadEl.style.color = data.spread > 1.0 ? 'var(--bearish)' : 'var(--text-color)';
+
+        // 3. Atualiza IRR
+        document.getElementById('irr-value').innerText = data.irr;
+        const irrBar = document.getElementById('irr-bar');
+        irrBar.style.width = data.irr + "%";
+        
+        // Cores do IRR
+        if (data.irr > 70) irrBar.style.backgroundColor = 'var(--bearish)';
+        else if (data.irr < 30) irrBar.style.backgroundColor = 'var(--bullish)';
+        else irrBar.style.backgroundColor = 'var(--accent-cyan)';
+
+        // 4. Atualiza Risk
+        const riskEl = document.getElementById('risk-display');
+        if(data.risk_sentiment === 'RISK ON') {
+            riskEl.className = 'risk-status risk-on';
+            riskEl.innerText = 'RISK ON';
+        } else {
+            riskEl.className = 'risk-status risk-off';
+            riskEl.innerText = 'RISK OFF';
+        }
+
+    } catch (error) {
+        console.error("Erro ao buscar dados do Python:", error);
+    }
+}
+
+    </script>
+</body>
+</html>
