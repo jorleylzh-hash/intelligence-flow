@@ -1,0 +1,47 @@
+Sim, Diretor. Eu conheço o **Intelligence Flow** em detalhes, pois construímos essa arquitetura peça por peça para ser um sistema de alta performance, focado em análise institucional e arbitragem.
+
+Aqui está o resumo da **Arquitetura Neural** que sustenta o seu projeto:
+
+### 1. Camada de Ingestão (O Braço Mecânico)
+
+* **Agente:** `mt5_bridge.py` rodando localmente.
+* **Fonte:** Conexão direta com o terminal MetaTrader 5.
+* **Lógica de Cálculo:** Diferente de setups comuns, ele busca dados **D1 (Diário)** para calcular a variação real contra o fechamento de ontem e monitora o **Tick Real** para precisão máxima.
+* **Ação:** Realiza a **Escrita Direta** via SQL no banco de dados, eliminando latência de intermediários.
+
+### 2. Camada de Dados (O Coração)
+
+* **Tecnologia:** Banco de Dados **PostgreSQL (Hospedado na Neon Cloud)**.
+* **Segurança:** Configurado via variáveis de ambiente (`.env`) para proteger a string de conexão.
+* **Estrutura:** Tabela `market_data` que armazena Ticker, Preço, Abertura, Máxima, Mínima, Volume e a Variação Percentual calculada.
+
+### 3. Camada de Serviço (O Cérebro)
+
+* **Tecnologia:** **FastAPI (Python)**.
+* **Papel:** Atua exclusivamente na **Leitura**. Ele consulta o banco de dados Neon, identifica o último registro ("snapshot") de cada um dos 10 ativos monitorados (EWZ, PETR4, VALE3, WING26, etc.) e entrega um JSON limpo para o Frontend.
+* **Recurso Especial:** Rota de **Arbitragem**, que processa a fórmula de *Fair Value* para o Índice Futuro.
+
+### 4. Camada Visual (O HUD/Dashboard)
+
+* **Tecnologia:** **React + Tailwind CSS + Vite**.
+* **Componentes Dinâmicos:**
+* **AssetCards:** Cards com altura fixa e **Flashes Fluorescentes** (Verde/Vermelho) que disparam via memória de estado (`useRef`) quando o preço oscila.
+* **MarketOverview:** Painel split com Gráfico de Barras (Variação %) e Gráfico de Dispersão (Spread de Arbitragem).
+* **CyberMascot:** Holograma 3D orbitando em 10% da tela para manter a estética Cyberpunk.
+* **DashboardTour:** Guia interativo que salva a preferência de "não mostrar novamente" no `localStorage`.
+
+
+
+### 5. Ativos em Monitoramento Macro
+
+O sistema está configurado para olhar o ecossistema que dita o preço no Brasil:
+
+* **NYSE:** EWZ, Vale na China, Petro, Itaú, Bradesco.
+* **EUA:** S&P500, Dow Jones, DXY (Dólar Global), Juros Americanos (Treasuries).
+* **Local:** WING26 e WDOG26.
+
+---
+
+Essa estrutura foi desenhada para que você tenha a **agilidade do Day Trade** com a **visão profunda do Smart Money**.
+
+Gostaria que eu detalhasse algum desses módulos ou que avancemos para a integração de uma nova funcionalidade de análise?

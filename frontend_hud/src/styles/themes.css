@@ -1,0 +1,32 @@
+/* frontend_hud/src/styles/themes.css */
+
+/* SKIN 1: NEON OPERATOR (Padrão) */
+:root[data-theme="neon"] {
+  --bg-core: #050505;          /* Preto Absoluto */
+  --bg-panel: #0a0a0a;         /* Painel levemente mais claro */
+  --primary: #00f3ff;          /* Ciano Neon */
+  --secondary: #7000ff;        /* Roxo Neon */
+  --text-main: #ffffff;
+  --text-dim: #888888;
+  --success: #00ff9d;
+  --danger: #ff0055;
+  
+  /* Efeitos Especiais */
+  --glow-primary: 0 0 10px rgba(0, 243, 255, 0.5);
+  --border-tech: 1px solid rgba(0, 243, 255, 0.2);
+}
+
+/* SKIN 2: INSTITUTIONAL PRO (Bloomberg Style) */
+:root[data-theme="institutional"] {
+  --bg-core: #1e1e1e;
+  --bg-panel: #252525;
+  --primary: #ff9900;          /* Laranja Terminal */
+  --secondary: #cccccc;
+  --text-main: #e0e0e0;
+  --text-dim: #a0a0a0;
+  --success: #4caf50;
+  --danger: #f44336;
+  
+  --glow-primary: none;
+  --border-tech: 1px solid #444;
+}

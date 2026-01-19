@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FORÇA O SCROLL EM DISPOSITIVOS MÓVEIS */
+html, body, #root {
+  min-height: 100vh;
+  /* Permite que a altura cresça conforme o conteúdo */
+  height: auto !important; 
+  overflow-x: hidden;
+  /* Garante a rolagem vertical */
+  overflow-y: auto !important; 
+  /* Rolagem suave no iPhone/iPad */
+  -webkit-overflow-scrolling: touch; 
+}
+
+/* Personalização da Barra de Rolagem (Fica bonito no PC) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0b1120;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #22d3ee;
+}
