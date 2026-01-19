@@ -16,13 +16,22 @@ from auth_service import (
 )
 
 load_dotenv()
+# CONFIGURAÇÃO DO BANCO DE DADOS
 DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL and DATABASE_URL.startswith(postgres://):
-    DATABASE_URL = DATABASE_URL.replace(postgres://, postgresql://, 1)
 
+# --- BLOCO DE CORREÇÃO AUTOMÁTICA (O FIX DO RENDER) ---
+# O Render entrega 'postgres://', mas o SQLAlchemy pede 'postgresql://'
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# ------------------------------------------------------
+
+if not DATABASE_URL:
+    raise ValueError("A variável DATABASE_URL não foi encontrada!")
+
+# Criação do Engine com a URL corrigida
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base.metadata.create_all(bind=engine)
+
+# ... (o resto do código permanece igual)
 
 app = FastAPI(title="Intelligence Flow API v3.3 - Debug Arbitrage")
 
