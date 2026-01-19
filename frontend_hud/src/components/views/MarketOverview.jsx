@@ -335,8 +335,8 @@ export default function MarketOverview() {
                 {ticker: 'WIN', price: 128500, change: 0.2},
                 {ticker: 'WDO', price: 5.15, change: -0.1},
             ]);
-
-            const resArb = await fetch('http://localhost:8000/market/arbitrage');
+            const BASE_URL = import.meta.env.VITE_API_URL
+            const resArb = await fetch('BASE_URL/market/arbitrage');
             const dataArb = await resArb.json();
             const cleanArb = Array.isArray(dataArb) ? dataArb : [];
             setArbitrage(cleanArb);
@@ -347,7 +347,7 @@ export default function MarketOverview() {
 
     const fetchChart = async () => {
         try {
-            const res = await fetch(`http://localhost:8000/market/history/${selectedAsset}`);
+            const res = await fetch(`BASE_URL/market/history/${selectedAsset}`);
             const data = await res.json();
             if(Array.isArray(data)) setChartData(data);
         } catch (e) { console.error("Erro chart:", e); }
@@ -467,4 +467,5 @@ export default function MarketOverview() {
 
         </div>
     );
+
 }
